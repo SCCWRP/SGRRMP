@@ -41,7 +41,7 @@ ui <- fluidPage(
     
     column(width = 12,
       
-      leafletOutput('map', width = '100%')
+      leafletOutput('map', width = '100%', height = 550)
            
     )
     
