@@ -13,12 +13,14 @@ ui <- fluidPage(
   
   mainPanel(width = 12,
   
+    # select percentile        
     column(width = 2, 
       selectInput(inputId  =  'ptile',
                   label = h4('Likely score:'),
                   choices = ptile, selected = 'full0.50')
     ),
     
+    # select point radius
     column(width = 3,
       sliderInput("pt_sz", 
                   label = h4("Point size:"), 
@@ -29,6 +31,7 @@ ui <- fluidPage(
       )
     ),
     
+    # select line size
     column(width = 3,
            sliderInput("ln_sz", 
                        label = h4("Line size:"), 
@@ -39,6 +42,7 @@ ui <- fluidPage(
            )
     ),
     
+    # map output
     column(width = 12,
       
       leafletOutput('map', width = '100%', height = 550)

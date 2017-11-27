@@ -10,12 +10,13 @@ load('data/sites.RData')
 dmn <- nhd.sgr@data %>% 
   select(matches('^full0_')) %>% 
   gather('var', 'val') %>% 
-  .$val
+  .$val %>% 
+  c(., sites$csci)
 
 # color palette
 pal <- colorNumeric(
   palette = c('#d7191c', '#abd9e9', '#2c7bb6'),  
-  domain = c(sites$csci, dmn))
+  domain = dmn)
 
 # custom label format function
 myLabelFormat = function(..., reverse_order = FALSE){ 
@@ -42,6 +43,7 @@ server <- function(input, output) {
     
   })
   
+  # non-reactive base map
   output$map <- renderLeaflet(
     
     leaflet(sites) %>%
@@ -50,6 +52,7 @@ server <- function(input, output) {
     
   )
   
+  # reactive map
   observe({
     
     # other inputs
@@ -60,6 +63,7 @@ server <- function(input, output) {
       clearShapes() %>% 
       clearControls()
     
+    # map
     prox %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns), 
                    label = ~paste('Likely score:', as.character(round(lns, 2)))
