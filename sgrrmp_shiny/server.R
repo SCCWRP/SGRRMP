@@ -15,7 +15,8 @@ dmn <- nhd.sgr@data %>%
 
 # color palette
 pal <- colorNumeric(
-  palette = c('#d7191c', '#abd9e9', '#2c7bb6'),  
+  palette = c('#d7191c', '#abd9e9', '#2c7bb6'),
+  na.color = 'yellow',
   domain = dmn)
 
 # custom label format function
@@ -38,6 +39,9 @@ server <- function(input, output) {
     # get polylines to plot
     inp <- gsub('\\.', '_', input$ptile)
     names(nhd.sgr@data)[names(nhd.sgr@data) %in% inp] <- 'lns'
+    
+    # set zero values to NA
+    nhd.sgr@data$lns <- ifelse(nhd.sgr@data$lns == 0, NA, nhd.sgr@data$lns)
     
     nhd.sgr
     
