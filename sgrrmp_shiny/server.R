@@ -1,23 +1,36 @@
 library(shiny)
-library(ggmap)
+library(sf)
 library(tidyverse)
 library(leaflet)
+library(stringr)
+source('R/funcs.R')
 
 load('data/nhd.sgr.unfort.Rdata')
-load('data/sites.RData')
+load('data/scrs.RData')
+
+# data as nhd.sgr
+nhd.sgr <- st_as_sf(nhd.sgr)
 
 # color domain
-dmn <- nhd.sgr@data %>% 
+dmn <- nhd.sgr %>% 
   select(matches('^full0_')) %>% 
+  data.frame %>% 
+  select(-geometry) %>% 
   gather('var', 'val') %>% 
   .$val %>% 
-  c(., sites$csci)
+  c(., scrs$csci)
 
 # color palette
 pal <- colorNumeric(
   palette = c('#d7191c', '#abd9e9', '#2c7bb6'),
   na.color = 'yellow',
   domain = dmn)
+
+# color palette for categories
+pal_exp <- colorFactor(
+  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(1, 2, 3)],
+  na.color = 'yellow',
+  domain = c('likely constrained', 'undetermined', 'likely unconstrained'))
 
 # custom label format function
 myLabelFormat = function(..., reverse_order = FALSE){ 
@@ -33,30 +46,73 @@ myLabelFormat = function(..., reverse_order = FALSE){
 # server logic
 server <- function(input, output) {
   
-  # data to plot
+  # data to plot, polylines with score expections
   dat <- reactive({
-    
+
     # get polylines to plot
-    inp <- gsub('\\.', '_', input$ptile)
-    names(nhd.sgr@data)[names(nhd.sgr@data) %in% inp] <- 'lns'
+    ptile <- input$ptile %>% 
+      paste0('full', .) %>% 
+      gsub('\\.', '_', .)
+    names(nhd.sgr)[names(nhd.sgr) %in% ptile] <- 'lns'
     
     # set zero values to NA
-    nhd.sgr@data$lns <- ifelse(nhd.sgr@data$lns == 0, NA, nhd.sgr@data$lns)
-    
-    nhd.sgr
+    out <- nhd.sgr %>% 
+      mutate(
+        lns = ifelse(lns == 0, NA, lns)
+      )
+
+    out
     
   })
   
-  # non-reactive base map
+  # data to plot, polylines with condition expectations
+  dat_exp <- reactive({
+    
+    # inputs
+    likes <- input$likes %>% as.numeric
+    thrsh <- input$thrsh
+    
+    # get biological condition expectations
+    cls <- getcls2(nhd.sgr, thrsh = thrsh, likes = likes)
+  
+    # join with spatial data
+    out <- nhd.sgr %>% 
+      left_join(cls, by = 'COMID')
+
+    out
+    
+  })
+  
+  # CSCI scores and stream condition expectations
+  scr_exp <- reactive({
+    
+    thrsh <- input$thrsh
+    likes <- input$likes %>% as.numeric
+    
+    scrs <- scrs %>% 
+      mutate(COMID = as.character(COMID)) %>% 
+      select(COMID, StationCode, csci)
+    
+    incl <- nhd.sgr %>% 
+      filter(COMID %in% scrs$COMID) %>% 
+      getcls(thrsh = thrsh, likes = likes) %>% 
+      mutate(COMID = as.character(COMID)) %>% 
+      left_join(scrs, by = 'COMID')
+    
+    return(incl)
+    
+  })
+
+  # non-reactive base map, score expectations
   output$map <- renderLeaflet(
     
-    leaflet(sites) %>%
+    leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
       addProviderTiles(providers$CartoDB.Positron)
     
   )
   
-  # reactive map
+  # reactive map, score expectations
   observe({
     
     # other inputs
@@ -72,7 +128,7 @@ server <- function(input, output) {
       addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns), 
                    label = ~paste('Likely score:', as.character(round(lns, 2)))
       ) %>% 
-      addCircleMarkers(data = sites, lng = ~long, lat = ~lat, radius = ptsz, weight = 0, fillOpacity = 0.8, 
+      addCircleMarkers(data = scrs, lng = ~long, lat = ~lat, radius = ptsz, weight = 0, fillOpacity = 0.8, 
                        label = ~paste('CSCI:', as.character(round(csci, 2))),
                        fillColor = ~pal(csci)
       ) %>% 
@@ -83,5 +139,79 @@ server <- function(input, output) {
       )
     
   })
+  
+  # non-reactive base map, condition expectations
+  output$map_exp <- renderLeaflet(
+    
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
+      addProviderTiles(providers$CartoDB.Positron)
+    
+  )
+  
+  # reactive map, condition expectations
+  observe({
+    
+    # other inputs
+    ptsz <- input$pt_sz
+    lnsz <- input$ln_sz
+    prox_exp <- leafletProxy("map_exp", data = dat_exp()) %>%
+      clearMarkers() %>%
+      clearShapes() %>% 
+      clearControls()
+    
+    # map
+    prox_exp %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste('Stream class:', strcls)
+      ) %>% 
+      addCircleMarkers(data = scrs, lng = ~long, lat = ~lat, radius = ptsz, weight = 0, fillOpacity = 0.8, 
+                       label = ~paste('CSCI:', as.character(round(csci, 2))),
+                       fillColor = ~pal(csci)
+      ) %>% 
+      addLegend("bottomright", pal = pal_exp, values = ~strcls,
+                title = "Expected classification",
+                opacity = 1
+      )
+    
+  })
+  
+  # plot of csci scores and expectations by station code
+  output$plo_exp <- renderPlot({
+
+    thrsh <- input$thrsh
+    
+    # CSCI scores and expectations
+    toplo1 <- scr_exp() %>% 
+      select(COMID, StationCode, datcut, strcls, csci, medv) %>% 
+      arrange(medv) %>% 
+      mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
+      unnest %>% 
+      rename(`Stream Class` = strcls)
+    
+    # total expected range
+    toplo2 <- scr_exp() %>% 
+      select(COMID, StationCode, data, medv) %>% 
+      arrange(medv) %>% 
+      mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
+      unnest
+    
+    # plot
+    p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
+      geom_line(aes(colour = `Stream Class`)) + 
+      geom_point(data = toplo2, aes(x = val), size = 0.35) +
+      geom_point(aes(x = csci), shape = 21, fill = 'white') +
+      geom_vline(xintercept = thrsh, linetype = 'dotted') +
+      theme_bw(base_family = 'serif') +
+      theme(
+        axis.text.y = element_text(size = 6)
+      ) +
+      scale_x_continuous('CSCI') +
+      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`)))
+    
+    print(p)
+    
+  })
+  
    
 }
