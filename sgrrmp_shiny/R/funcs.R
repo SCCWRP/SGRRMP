@@ -40,7 +40,7 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
       }),
       
       medv = map(data, ~ filter(.x, var %in% 'full0_50') %>% .$val), 
-      strcls = map(data, function(x){
+      strcls = map(datcut, function(x){
         
         # return NA if any zero values in predictions
         if(any(x$val == 0)){
@@ -56,7 +56,7 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
    
         # find if above/below or covering thrsh
         cls <- findInterval(thrsh, rngs)
-        
+
         return(cls)
         
       })
@@ -65,9 +65,19 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
     unnest(medv) %>% 
     arrange(medv) %>% 
     mutate(COMID = factor(COMID, levels = COMID)) %>% 
-    unnest(strcls) %>%
-    mutate(strcls = factor(strcls, levels = unlist(lbs), labels = names(lbs)))
+    unnest(strcls) 
+
+  # subset lbs by those in interval
+  lbs <- unique(dat$strcls) %>% 
+    na.omit %>% 
+    as.numeric %>% 
+    match(unlist(lbs)) %>% 
+    lbs[.]
   
+  # strcls as correct factor levels
+  dat <- dat %>%
+    mutate(strcls = factor(strcls, levels = unlist(lbs), labels = names(lbs)))
+
   return(dat)
   
 }
@@ -119,14 +129,24 @@ getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constr
           range
         
         cls <- findInterval(thrsh, rngs)
-                
+     
         return(cls)
 
       })
      
     ) %>% 
     select(-data) %>% 
-    unnest %>% 
+    unnest 
+  
+  # subset lbs by those in interval
+  lbs <- unique(dat$strcls) %>% 
+    na.omit %>% 
+    as.numeric %>% 
+    match(unlist(lbs)) %>% 
+    lbs[.]
+  
+  # strcls as correct factor levels
+  dat <- dat %>%
     mutate(strcls = factor(strcls, levels = unlist(lbs), labels = names(lbs)))
   
   return(dat)

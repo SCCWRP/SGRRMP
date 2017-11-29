@@ -87,7 +87,7 @@ ui <- fluidPage(
             
       ),       
              
-      tabsetPanel(
+      tabsetPanel(type = 'pills', 
         
         tabPanel('Map',
        
@@ -105,7 +105,7 @@ ui <- fluidPage(
           # plot output
           column(width = 12,
                 
-            plotOutput('plo_exp', width = '100%', height = 550)
+            plotOutput('plo_exp', width = '90%', height = 850)
                 
           ) 
                  

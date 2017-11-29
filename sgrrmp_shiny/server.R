@@ -103,7 +103,7 @@ server <- function(input, output) {
     
   })
 
-  # non-reactive base map, score expectations
+  # non-reactive base map
   output$map <- renderLeaflet(
     
     leaflet(scrs) %>%
@@ -112,19 +112,27 @@ server <- function(input, output) {
     
   )
   
-  # reactive map, score expectations
+  # non-reactive base map, condition expectations
+  output$map_exp <- renderLeaflet(
+    
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
+      addProviderTiles(providers$CartoDB.Positron)
+    
+  )
+  
+  # reactive maps
   observe({
     
     # other inputs
     ptsz <- input$pt_sz
     lnsz <- input$ln_sz
-    prox <- leafletProxy("map", data = dat()) %>%
+    
+    # score expectations
+    leafletProxy("map", data = dat()) %>%
       clearMarkers() %>%
       clearShapes() %>% 
-      clearControls()
-    
-    # map
-    prox %>% 
+      clearControls() %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns), 
                    label = ~paste('Likely score:', as.character(round(lns, 2)))
       ) %>% 
@@ -138,30 +146,11 @@ server <- function(input, output) {
                 # labFormat = myLabelFormat(reverse_order = T)
       )
     
-  })
-  
-  # non-reactive base map, condition expectations
-  output$map_exp <- renderLeaflet(
-    
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron)
-    
-  )
-  
-  # reactive map, condition expectations
-  observe({
-    
-    # other inputs
-    ptsz <- input$pt_sz
-    lnsz <- input$ln_sz
-    prox_exp <- leafletProxy("map_exp", data = dat_exp()) %>%
+    # condition expectations
+    leafletProxy("map_exp", data = dat_exp()) %>%
       clearMarkers() %>%
       clearShapes() %>% 
-      clearControls()
-    
-    # map
-    prox_exp %>% 
+      clearControls()%>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste('Stream class:', strcls)
       ) %>% 
@@ -191,20 +180,21 @@ server <- function(input, output) {
     
     # total expected range
     toplo2 <- scr_exp() %>% 
-      select(COMID, StationCode, data, medv) %>% 
+      select(COMID, StationCode, data, strcls, medv) %>% 
       arrange(medv) %>% 
       mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
-      unnest
+      unnest %>% 
+      rename(`Stream Class` = strcls)
     
     # plot
     p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
-      geom_line(aes(colour = `Stream Class`)) + 
-      geom_point(data = toplo2, aes(x = val), size = 0.35) +
-      geom_point(aes(x = csci), shape = 21, fill = 'white') +
-      geom_vline(xintercept = thrsh, linetype = 'dotted') +
-      theme_bw(base_family = 'serif') +
+      geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
+      geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
+      geom_point(aes(x = csci), shape = 21, fill = 'white', size = 4, alpha = 0.4) +
+      geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
+      theme_bw(base_family = 'serif', base_size = 18) +
       theme(
-        axis.text.y = element_text(size = 6)
+        axis.text.y = element_text(size = 10)
       ) +
       scale_x_continuous('CSCI') +
       scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`)))
