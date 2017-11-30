@@ -26,11 +26,17 @@ pal <- colorNumeric(
   na.color = 'yellow',
   domain = dmn)
 
-# color palette for categories
+# color palette for stream expectations
 pal_exp <- colorFactor(
   palette = RColorBrewer::brewer.pal(9, 'Set1')[c(1, 2, 3)],
   na.color = 'yellow',
   domain = c('likely constrained', 'undetermined', 'likely unconstrained'))
+
+# color palette for CSCI performance
+pal_prf <- colorFactor(
+  palette = c('white', 'blue', 'red'),
+  na.color = 'yellow',
+  domain = c('expected', 'over performing', 'under performing'))
 
 # custom label format function
 myLabelFormat = function(..., reverse_order = FALSE){ 
@@ -89,15 +95,8 @@ server <- function(input, output) {
     thrsh <- input$thrsh
     likes <- input$likes %>% as.numeric
     
-    scrs <- scrs %>% 
-      mutate(COMID = as.character(COMID)) %>% 
-      select(COMID, StationCode, csci)
-    
-    incl <- nhd.sgr %>% 
-      filter(COMID %in% scrs$COMID) %>% 
-      getcls(thrsh = thrsh, likes = likes) %>% 
-      mutate(COMID = as.character(COMID)) %>% 
-      left_join(scrs, by = 'COMID')
+    # process
+    incl <- site_exp(nhd.sgr, scrs, thrsh, likes)
     
     return(incl)
     
@@ -140,7 +139,7 @@ server <- function(input, output) {
                        label = ~paste('CSCI:', as.character(round(csci, 2))),
                        fillColor = ~pal(csci)
       ) %>% 
-      addLegend("bottomright", pal = pal, values = ~lns,
+      addLegend("topright", pal = pal, values = ~lns,
                 title = "Likely score",
                 opacity = 1#, 
                 # labFormat = myLabelFormat(reverse_order = T)
@@ -158,7 +157,7 @@ server <- function(input, output) {
                        label = ~paste('CSCI:', as.character(round(csci, 2))),
                        fillColor = ~pal(csci)
       ) %>% 
-      addLegend("bottomright", pal = pal_exp, values = ~strcls,
+      addLegend("topright", pal = pal_exp, values = ~strcls,
                 title = "Expected classification",
                 opacity = 1
       )
@@ -172,17 +171,16 @@ server <- function(input, output) {
     
     # CSCI scores and expectations
     toplo1 <- scr_exp() %>% 
-      select(COMID, StationCode, datcut, strcls, csci, medv) %>% 
-      arrange(medv) %>% 
-      mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
+      select(COMID, StationCode, datcut, strcls, csci, perf) %>% 
       unnest %>% 
-      rename(`Stream Class` = strcls)
+      rename(
+        `Stream Class` = strcls,
+        `Relative\nperformance` = perf
+        )
     
     # total expected range
     toplo2 <- scr_exp() %>% 
-      select(COMID, StationCode, data, strcls, medv) %>% 
-      arrange(medv) %>% 
-      mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
+      select(COMID, StationCode, data, strcls) %>% 
       unnest %>% 
       rename(`Stream Class` = strcls)
     
@@ -190,14 +188,15 @@ server <- function(input, output) {
     p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
       geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
       geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
-      geom_point(aes(x = csci), shape = 21, fill = 'white', size = 4, alpha = 0.4) +
+      geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
       geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
       theme_bw(base_family = 'serif', base_size = 18) +
       theme(
         axis.text.y = element_text(size = 10)
       ) +
       scale_x_continuous('CSCI') +
-      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`)))
+      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
+      scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
     
     print(p)
     

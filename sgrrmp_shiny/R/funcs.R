@@ -152,3 +152,67 @@ getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constr
   return(dat)
   
 }
+
+#' Get CSCI StationCode expectations and performance classication
+#'
+#' @param datin sf object with stream COMIDS and quantile expectations
+#' @param scrs CSCI scores by COMID and StationCode
+#' @param thrsh numeric for CSCI scoring thresholds
+#' @param likes numeric for tails to truncate expectations for overlap with thrsh
+#' 
+site_exp <- function(datin, scrs, thrsh, likes, 
+                     lbs = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){
+  
+  # site csci scores
+  scrs <- scrs %>% 
+    mutate(COMID = as.character(COMID)) %>% 
+    select(COMID, StationCode, csci)
+  
+  # filter comids with csci scores, classify, join with scores
+  incl <- datin %>% 
+    filter(COMID %in% scrs$COMID) %>% 
+    getcls(thrsh = thrsh, likes = likes) %>% 
+    mutate(COMID = as.character(COMID)) %>% 
+    left_join(scrs, by = 'COMID') %>% 
+    arrange(medv) %>% 
+    mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
+    select(-medv)
+  
+  # get CSCI performance (over/under)
+  incl <- incl %>% 
+    mutate(
+      perf = pmap(list(datcut, csci), function(datcut, csci){
+        
+        # return NA if any zero values in predictions
+        if(any(datcut$val == 0)){
+          
+          prf <- NA
+          return(prf)
+          
+        } 
+        
+        # within datcut interval
+        prf <- findInterval(csci, datcut$val)
+        
+        return(prf)
+        
+      })
+    ) %>% 
+    unnest(perf) %>% 
+    mutate(bythrsh = ifelse(csci < thrsh, 0, 1)) %>% 
+    unite('typeprf', perf, bythrsh, remove = FALSE)
+  
+  # subset lbs by those in interval
+  lbs <- unique(incl$perf) %>% 
+    na.omit %>% 
+    as.numeric %>% 
+    match(unlist(lbs)) %>% 
+    lbs[.]
+  
+  # perf as correct factor levels
+  incl <- incl %>%
+    mutate(perf = factor(perf, levels = unlist(lbs), labels = names(lbs)))
+  
+  return(incl)
+  
+}
