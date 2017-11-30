@@ -153,14 +153,18 @@ server <- function(input, output) {
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste('Stream class:', strcls)
       ) %>% 
-      addCircleMarkers(data = scrs, lng = ~long, lat = ~lat, radius = ptsz, weight = 0, fillOpacity = 0.8, 
-                       label = ~paste('CSCI:', as.character(round(csci, 2))),
-                       fillColor = ~pal(csci)
+      addCircleMarkers(data = scr_exp(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
+                       label = ~paste0('CSCI: ', as.character(round(csci, 2)), ', ', perf),
+                       fillColor = ~pal_prf(perf), color = 'black'
       ) %>% 
       addLegend("topright", pal = pal_exp, values = ~strcls,
                 title = "Expected classification",
                 opacity = 1
-      )
+      ) #%>% 
+      # addLegend("topright", pal = pal_prf, values = ~perf,
+      #           title = "CSCI performance",
+      #           opacity = 1
+      # )
     
   })
   

@@ -166,7 +166,7 @@ site_exp <- function(datin, scrs, thrsh, likes,
   # site csci scores
   scrs <- scrs %>% 
     mutate(COMID = as.character(COMID)) %>% 
-    select(COMID, StationCode, csci)
+    select(COMID, StationCode, csci, lat, long)
   
   # filter comids with csci scores, classify, join with scores
   incl <- datin %>% 
@@ -177,7 +177,7 @@ site_exp <- function(datin, scrs, thrsh, likes,
     arrange(medv) %>% 
     mutate(StationCode = factor(StationCode, levels = unique(StationCode))) %>% 
     select(-medv)
-  
+
   # get CSCI performance (over/under)
   incl <- incl %>% 
     mutate(
