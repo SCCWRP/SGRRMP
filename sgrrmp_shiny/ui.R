@@ -15,8 +15,15 @@ ui <- fluidPage(
             selectInput(inputId  =  'modls',
                         label = h4('Prediction model:'),
                         choices = c('core', 'full'), selected = 'full')
+      ),    
+      
+      # which site classification
+      column(width = 3, 
+             selectInput(inputId  =  'typs',
+                         label = h4('Site classifications:'),
+                         choices = c('perf', 'type'), selected = 'perf')
       ),           
-          
+      
       # select point radius
       column(width = 3,
              sliderInput("pt_sz", 
@@ -89,7 +96,7 @@ ui <- fluidPage(
                sliderInput('tails', 
                            label = h4("Expectation tails:"), 
                            min = 0.05, 
-                           max = 0.5,
+                           max = 0.45,
                            value = 0.05, 
                            step = 0.05
                )

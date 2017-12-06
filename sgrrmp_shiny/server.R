@@ -3,6 +3,7 @@ library(sf)
 library(tidyverse)
 library(leaflet)
 library(stringr)
+library(scales)
 source('R/funcs.R')
 
 # spatial comid data
@@ -38,6 +39,13 @@ pal_prf <- colorFactor(
   na.color = 'yellow',
   domain = c('expected', 'over performing', 'under performing'))
 
+# color palette for CSCI type
+pal_typ <- colorFactor(
+  palette = hue_pal()(100), 
+  na.color = 'yellow',
+  domain = paste0('Type', str_pad(seq(1:12), 2, pad = '0'))
+  )
+
 # server logic
 server <- function(input, output) {
   
@@ -64,8 +72,8 @@ server <- function(input, output) {
   dat_exp <- reactive({
     
     # inputs
-    tails <- input$tails %>% as.numeric
     thrsh <- input$thrsh
+    tails <- input$tails %>% as.numeric
     modls <- input$modls
     
     # get biological condition expectations
@@ -82,12 +90,14 @@ server <- function(input, output) {
   # CSCI scores and stream condition expectations
   scr_exp <- reactive({
     
+    # inputs
     thrsh <- input$thrsh
     tails <- input$tails %>% as.numeric
+    modls <- input$modls
     
     # process
-    incl <- site_exp(spat, scrs, thrsh, tails)
-    
+    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tails, modls = modls)
+
     return(incl)
     
   })
@@ -116,6 +126,7 @@ server <- function(input, output) {
     # other inputs
     ptsz <- input$pt_sz
     lnsz <- input$ln_sz
+    typs <- input$typs
 
     # score expectations
     leafletProxy("map", data = dat()) %>%
@@ -135,25 +146,41 @@ server <- function(input, output) {
       )
     
     # condition expectations
-    leafletProxy("map_exp", data = dat_exp()) %>%
+    exp_bs <- leafletProxy("map_exp", data = dat_exp()) %>%
       clearMarkers() %>%
       clearShapes() %>% 
       clearControls()%>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste('Stream class:', strcls)
       ) %>% 
-      addCircleMarkers(data = scr_exp(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
-                       label = ~paste0('CSCI: ', as.character(round(csci, 2)), ', ', perf),
-                       fillColor = ~pal_prf(perf), color = 'black'
-      ) %>% 
       addLegend("topright", pal = pal_exp, values = ~strcls,
                 title = "Expected classification",
                 opacity = 1
-      ) #%>% 
-      # addLegend("topright", pal = pal_prf, values = ~perf,
-      #           title = "CSCI performance",
-      #           opacity = 1
-      # )
+      )
+    
+    # conditions expections as site performance
+    if(typs == 'perf'){
+      
+      exp_bs %>% 
+        addCircleMarkers(data = scr_exp(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
+                         label = ~paste0('CSCI: ', as.character(round(csci, 2)), ', ', perf),
+                         fillColor = ~pal_prf(perf), color = 'black'
+        ) #%>% 
+        # addLegend("topright", pal = pal_prf, values = ~perf,
+        #           title = "CSCI performance",
+        #           opacity = 1
+        # )
+  
+    # condition expectations as site types    
+    } else {
+      
+      exp_bs %>% 
+        addCircleMarkers(data = scr_exp(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
+                         label = ~paste0('CSCI: ', as.character(round(csci, 2)), ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        )
+      
+    }
     
   })
   
@@ -161,14 +188,16 @@ server <- function(input, output) {
   output$plo_exp <- renderPlot({
 
     thrsh <- input$thrsh
+    typs <- input$typs
     
     # CSCI scores and expectations
     toplo1 <- scr_exp() %>% 
-      select(COMID, StationCode, datcut, strcls, csci, perf) %>% 
+      select(COMID, StationCode, datcut, strcls, csci, perf, typelv) %>% 
       unnest %>% 
       rename(
         `Stream Class` = strcls,
-        `Relative\nperformance` = perf
+        `Relative\nperformance` = perf,
+        Type = typelv
         )
     
     # total expected range
@@ -181,15 +210,30 @@ server <- function(input, output) {
     p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
       geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
       geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
-      geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
-      geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
       theme_bw(base_family = 'serif', base_size = 18) +
       theme(
         axis.text.y = element_text(size = 10)
       ) +
       scale_x_continuous('CSCI') +
-      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
-      scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
+      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`)))
+    
+    # CSCI points by performance  
+    if(typs == 'perf'){
+      
+      p <- p +
+        geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
+        geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
+        scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
+    
+    # CSCI points by type
+    } else {
+      
+      p <- p +
+        geom_point(aes(x = csci, fill = Type), shape = 21, size = 4, alpha = 0.4) +
+        geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
+        scale_fill_manual(values = pal_typ(levels(toplo1$Type)), na.value = 'yellow')
+
+    }
     
     print(p)
     

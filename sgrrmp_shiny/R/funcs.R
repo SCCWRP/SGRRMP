@@ -44,7 +44,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
       }),
       
       medv = map(data, ~ filter(.x, var %in% paste0(modls, '0.50')) %>% .$val), 
-      strcls = map(datcut, function(x){
+      strcls_int = map(datcut, function(x){
         
         # return NA if any zero values in predictions
         if(any(is.na(x$val))){
@@ -69,10 +69,10 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
     unnest(medv) %>% 
     arrange(medv) %>% 
     mutate(COMID = factor(COMID, levels = COMID)) %>% 
-    unnest(strcls) 
+    unnest(strcls_int) 
 
   # subset lbs by those in interval
-  lbs <- unique(dat$strcls) %>% 
+  lbs <- unique(dat$strcls_int) %>% 
     na.omit %>% 
     as.numeric %>% 
     match(unlist(lbs)) %>% 
@@ -80,7 +80,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
   
   # strcls as correct factor levels
   dat <- dat %>%
-    mutate(strcls = factor(strcls, levels = unlist(lbs), labels = names(lbs)))
+    mutate(strcls = factor(strcls_int, levels = unlist(lbs), labels = names(lbs)))
 
   return(dat)
   
@@ -113,7 +113,7 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
     group_by(COMID) %>% 
     nest %>% 
     mutate(
-      strcls = map(data, function(x){
+      strcls_int = map(data, function(x){
         
         # return NA if any zero values in predictions
         if(any(is.na(x$val))){
@@ -147,7 +147,7 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
     unnest 
   
   # subset lbs by those in interval
-  lbs <- unique(dat$strcls) %>% 
+  lbs <- unique(dat$strcls_int) %>% 
     na.omit %>% 
     as.numeric %>% 
     match(unlist(lbs)) %>% 
@@ -155,7 +155,7 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
   
   # strcls as correct factor levels
   dat <- dat %>%
-    mutate(strcls = factor(strcls, levels = unlist(lbs), labels = names(lbs)))
+    mutate(strcls = factor(strcls_int, levels = unlist(lbs), labels = names(lbs)))
   
   return(dat)
   
@@ -167,10 +167,13 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
 #' @param scrs CSCI scores by COMID and StationCode
 #' @param thrsh numeric for CSCI scoring thresholds
 #' @param tails numeric for tails to truncate expectations for overlap with thrsh
+#' @param lbs chr string labels for site performance as over, expected, or under performing
+#' @param ... additional arguments passed to getcls
 #' 
-site_exp <- function(datin, scrs, thrsh, tails, 
-                     lbs = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){
-  
+site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over performing' = 2, 'expected' = 1, 'under performing' = 0),
+                     ...
+                    ){
+
   # site csci scores
   scrs <- scrs %>% 
     mutate(COMID = as.character(COMID)) %>% 
@@ -179,7 +182,7 @@ site_exp <- function(datin, scrs, thrsh, tails,
   # filter comids with csci scores, classify, join with scores
   incl <- datin %>% 
     filter(COMID %in% scrs$COMID) %>% 
-    getcls(thrsh = thrsh, tails = tails) %>% 
+    getcls(thrsh = thrsh, tails = tails, ...) %>% 
     mutate(COMID = as.character(COMID)) %>% 
     left_join(scrs, by = 'COMID') %>% 
     arrange(medv) %>% 
@@ -206,10 +209,15 @@ site_exp <- function(datin, scrs, thrsh, tails,
         
       })
     ) %>% 
-    unnest(perf) %>% 
-    mutate(bythrsh = ifelse(csci < thrsh, 0, 1)) %>% 
-    unite('typeprf', perf, bythrsh, remove = FALSE)
-  
+    unnest(perf) %>%
+    mutate(bythrsh = ifelse(csci < thrsh, 0, 1)) %>%
+    unite('typeprf', strcls_int, perf, bythrsh, remove = FALSE) %>% 
+    mutate(
+      typelv = typ_lbs(typeprf),
+      typeoc = typ_lbs(typeprf, obs_sc = T)
+      ) %>% 
+    dplyr::select(-typeprf, -bythrsh)
+
   # subset lbs by those in interval
   lbs <- unique(incl$perf) %>% 
     na.omit %>% 
@@ -220,7 +228,85 @@ site_exp <- function(datin, scrs, thrsh, tails,
   # perf as correct factor levels
   incl <- incl %>%
     mutate(perf = factor(perf, levels = unlist(lbs), labels = names(lbs)))
-  
+    
   return(incl)
   
 }
+
+#' Get type labels from three level code 
+#'
+#' @param vec chr string vector of codes to typify 
+#' @param thrsh numeric for CSCI scoring thresholds
+#' @param tails numeric for tails to truncate expectations for overlap with thrsh
+#' @param obs_sc logical if observed score text qualifiers are returned
+#'
+#' @details  The three level codes for type are (0, 1, 2), (0, 1, 2), and (0, 1).  The first level is likely unconstrained (0), undetermined (1), and likely constrained (2); the second level is under-performing (0), as expected (1), and over-performing (2); the third level is below threshold (0) and above threshold (1)
+typ_lbs <- function(vec, thrsh = 0.79, tails = 0.05, obs_sc = FALSE){
+
+  # kill NA entries
+  vec <- ifelse(grepl('NA', vec), NA, vec)
+  
+  # get tails in chr format
+  lovl <- 100 * tails
+  hivl <- 100 * (1 -  tails) 
+  vls <- c(lovl, hivl) %>% 
+    round(., 0) %>% 
+    paste0(., 'th')
+  
+  # type labels from codes in vec
+  lbs <- list(
+    Type01 = '0_2_1', 
+    Type02 = '0_1_1',
+    Type03 = '0_0_1',
+    Type04 = '0_0_0',
+    Type05 = '1_2_1',
+    Type06 = '1_1_1',
+    Type07 = '1_1_0',  
+    Type08 = '1_0_0',
+    Type09 = '2_2_1',
+    Type10 = '2_2_0',
+    Type11 = '2_1_0',
+    Type12 = '2_0_0'
+  )
+  
+  # subset lbs by those in vec
+  lbs <- unique(vec) %>% 
+    na.omit %>% 
+    match(unlist(lbs)) %>% 
+    lbs[.] %>% 
+    .[sort(names(.))]
+  
+  # assign factor levels to vec
+  vec <- factor(vec, levels = unlist(lbs), labels = names(lbs))
+   
+  if(!obs_sc) return(vec)
+
+  # observed score chr types
+  obs_sc <- list(
+    Type01 = paste('>=', vls[2]), 
+    Type02 = paste(vls[1], 'to', vls[2]),
+    Type03 = paste(thrsh, 'to', vls[1]),
+    Type04 = paste('<', thrsh),
+    Type05 = paste('>=', vls[2]),
+    Type06 = paste(thrsh, 'to', vls[2]),
+    Type07 = paste(vls[1], 'to', thrsh), 
+    Type08 = paste('<', vls[1]),
+    Type09 = paste('>=', thrsh),
+    Type10 = paste(vls[2], 'to', thrsh),
+    Type11 = paste(vls[1], 'to', vls[2]),
+    Type12 = paste('<', vls[1])
+  ) %>% 
+  enframe('vec', 'obs_sc') %>% 
+  unnest
+
+  # assign factor levels to vec
+  vec <- vec %>% 
+    data.frame(vec = .) %>% 
+    mutate(vec = as.character(vec)) %>% 
+    left_join(., obs_sc, by = 'vec') %>% 
+    .$obs_sc
+
+  return(vec)
+  
+}
+  
