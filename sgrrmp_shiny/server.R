@@ -5,14 +5,14 @@ library(leaflet)
 library(stringr)
 source('R/funcs.R')
 
-load('data/nhd.sgr.unfort.Rdata')
+# spatial comid data
+load('data/spat.RData')
+
+# csci scores at sites
 load('data/scrs.RData')
 
-# data as nhd.sgr
-nhd.sgr <- st_as_sf(nhd.sgr)
-
 # color domain
-dmn <- nhd.sgr %>% 
+dmn <- spat %>% 
   select(matches('^full0_')) %>% 
   data.frame %>% 
   select(-geometry) %>% 
@@ -38,17 +38,6 @@ pal_prf <- colorFactor(
   na.color = 'yellow',
   domain = c('expected', 'over performing', 'under performing'))
 
-# custom label format function
-myLabelFormat = function(..., reverse_order = FALSE){ 
-  if(reverse_order){ 
-    function(type = 'numeric', cuts){ 
-      cuts <- sort(cuts, decreasing = T)
-    } 
-  }else{
-    labelFormat(...)
-  }
-}
-
 # server logic
 server <- function(input, output) {
   
@@ -58,15 +47,11 @@ server <- function(input, output) {
     # get polylines to plot
     ptile <- input$ptile %>% 
       paste0('full', .) %>% 
-      gsub('\\.', '_', .)
-    names(nhd.sgr)[names(nhd.sgr) %in% ptile] <- 'lns'
+      gsub('\\.', '.', .)
+    names(spat)[names(spat) %in% ptile] <- 'lns'
     
     # set zero values to NA
-    out <- nhd.sgr %>% 
-      mutate(
-        lns = ifelse(lns == 0, NA, lns)
-      )
-
+    out <- spat 
     out
     
   })
@@ -79,10 +64,10 @@ server <- function(input, output) {
     thrsh <- input$thrsh
     
     # get biological condition expectations
-    cls <- getcls2(nhd.sgr, thrsh = thrsh, likes = likes)
+    cls <- getcls2(spat, thrsh = thrsh, likes = likes)
   
     # join with spatial data
-    out <- nhd.sgr %>% 
+    out <- spat %>% 
       left_join(cls, by = 'COMID')
 
     out
@@ -96,7 +81,7 @@ server <- function(input, output) {
     likes <- input$likes %>% as.numeric
     
     # process
-    incl <- site_exp(nhd.sgr, scrs, thrsh, likes)
+    incl <- site_exp(spat, scrs, thrsh, likes)
     
     return(incl)
     
@@ -104,7 +89,7 @@ server <- function(input, output) {
 
   # non-reactive base map
   output$map <- renderLeaflet(
-    
+
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
       addProviderTiles(providers$CartoDB.Positron)
@@ -126,7 +111,7 @@ server <- function(input, output) {
     # other inputs
     ptsz <- input$pt_sz
     lnsz <- input$ln_sz
-    
+
     # score expectations
     leafletProxy("map", data = dat()) %>%
       clearMarkers() %>%
@@ -141,8 +126,7 @@ server <- function(input, output) {
       ) %>% 
       addLegend("topright", pal = pal, values = ~lns,
                 title = "Likely score",
-                opacity = 1#, 
-                # labFormat = myLabelFormat(reverse_order = T)
+                opacity = 1
       )
     
     # condition expectations

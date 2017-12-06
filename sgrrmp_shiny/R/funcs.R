@@ -28,7 +28,7 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
         hivl <- 100 * (1 -  likes) 
         vls <- c(lovl, hivl) %>% 
           str_pad(2, pad = '0') %>% 
-          paste0('full0_', .)
+          paste0('full0.', .)
         
         # filter by quantile labels and median
         x <- x %>% 
@@ -39,11 +39,11 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
         
       }),
       
-      medv = map(data, ~ filter(.x, var %in% 'full0_50') %>% .$val), 
+      medv = map(data, ~ filter(.x, var %in% 'full0.50') %>% .$val), 
       strcls = map(datcut, function(x){
         
         # return NA if any zero values in predictions
-        if(any(x$val == 0)){
+        if(any(is.na(x$val))){
           
           cls <- NA
           return(cls)
@@ -91,7 +91,7 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
 #' 
 #' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by likes, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
 getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
-  
+
   # sanity check
   if(likes >= 0.5)
     stop('likes must be less than 0.5')
@@ -108,7 +108,7 @@ getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constr
       strcls = map(data, function(x){
         
         # return NA if any zero values in predictions
-        if(any(x$val == 0)){
+        if(any(is.na(x$val))){
           
           cls <- NA
           return(cls)
@@ -120,7 +120,7 @@ getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constr
         hivl <- 100 * (1 -  likes) 
         vls <- c(lovl, hivl) %>% 
           str_pad(2, pad = '0') %>% 
-          paste0('full0_', .)
+          paste0('full0.', .)
         
         # filter by quantile labels and median
         rngs <- x %>% 
@@ -184,7 +184,7 @@ site_exp <- function(datin, scrs, thrsh, likes,
       perf = pmap(list(datcut, csci), function(datcut, csci){
         
         # return NA if any zero values in predictions
-        if(any(datcut$val == 0)){
+        if(any(is.na(datcut$val))){
           
           prf <- NA
           return(prf)
