@@ -1,12 +1,5 @@
 library(leaflet)
 
-# percentiles to select
-ptile <- seq(0.05, 0.95, by = 0.05) %>% 
-  format(nsmall = 2)
-
-# tails to cut by likelihood expectation
-likes <- ptile[1:9]
-
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
@@ -16,7 +9,14 @@ ui <- fluidPage(
   fluidRow(
     
     column(width = 12, 
-           
+      
+      # prediction model
+      column(width = 3, 
+            selectInput(inputId  =  'modls',
+                        label = h4('Prediction model:'),
+                        choices = c('core', 'full'), selected = 'full')
+      ),           
+          
       # select point radius
       column(width = 3,
              sliderInput("pt_sz", 
@@ -49,9 +49,15 @@ ui <- fluidPage(
              
       # select percentile        
       column(width = 4, 
-        selectInput(inputId  =  'ptile',
-                    label = h4('Percentile estimated score:'),
-                    choices = ptile, selected = '0.50')
+             
+        sliderInput('ptile',
+                    label = h4("Percentile estimated score:"),
+                    min = 0.05,
+                    max = 0.95,
+                    value = 0.5,
+                    step = 0.05
+        )
+        
       ),
     
       # map output
@@ -80,9 +86,13 @@ ui <- fluidPage(
         
         # selected tails
         column(width = 4, 
-               selectInput(inputId  =  'likes',
-                           label = h4('Expectation ranges:'),
-                           choices = likes, selected = '0.05')
+               sliderInput('tails', 
+                           label = h4("Expectation tails:"), 
+                           min = 0.05, 
+                           max = 0.5,
+                           value = 0.05, 
+                           step = 0.05
+               )
         )
             
       ),       

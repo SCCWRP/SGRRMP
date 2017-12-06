@@ -13,7 +13,7 @@ load('data/scrs.RData')
 
 # color domain
 dmn <- spat %>% 
-  select(matches('^full0_')) %>% 
+  select(matches('^full0_|^core0_')) %>% 
   data.frame %>% 
   select(-geometry) %>% 
   gather('var', 'val') %>% 
@@ -44,9 +44,13 @@ server <- function(input, output) {
   # data to plot, polylines with score expections
   dat <- reactive({
 
+    ptile <- input$ptile 
+    modls <- input$modls
+
     # get polylines to plot
-    ptile <- input$ptile %>% 
-      paste0('full', .) %>% 
+    ptile <- ptile %>% 
+      format(nsmall = 2) %>% 
+      paste0(modls, .) %>% 
       gsub('\\.', '.', .)
     names(spat)[names(spat) %in% ptile] <- 'lns'
     
@@ -60,11 +64,12 @@ server <- function(input, output) {
   dat_exp <- reactive({
     
     # inputs
-    likes <- input$likes %>% as.numeric
+    tails <- input$tails %>% as.numeric
     thrsh <- input$thrsh
+    modls <- input$modls
     
     # get biological condition expectations
-    cls <- getcls2(spat, thrsh = thrsh, likes = likes)
+    cls <- getcls2(spat, thrsh = thrsh, tails = tails, modls = modls)
   
     # join with spatial data
     out <- spat %>% 
@@ -78,10 +83,10 @@ server <- function(input, output) {
   scr_exp <- reactive({
     
     thrsh <- input$thrsh
-    likes <- input$likes %>% as.numeric
+    tails <- input$tails %>% as.numeric
     
     # process
-    incl <- site_exp(spat, scrs, thrsh, likes)
+    incl <- site_exp(spat, scrs, thrsh, tails)
     
     return(incl)
     

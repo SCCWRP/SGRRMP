@@ -2,20 +2,24 @@
 #' 
 #' @param datin sf object with stream COMIDS and quantile expectations
 #' @param thrsh numeric for CSCI scoring thresholds
-#' @param likes numeric for tails to truncate expectations for overlap with thrsh
+#' @param tails numeric for tails to truncate expectations for overlap with thrsh
+#' @param modls chr string for selecting core (simple) or full model for expectations
 #' @param lbs chr string labels for interval classifications
 #' 
-#' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by likes, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
-getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
+#' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
+getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full'), lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
   
   # sanity check
-  if(likes >= 0.5)
-    stop('likes must be less than 0.5')
+  if(tails >= 0.5)
+    stop('tails must be less 0.5')
+  
+  # models argument
+  modls <- match.arg(modls)
   
   dat <- datin
   st_geometry(dat) <- NULL
   dat <- dat %>% 
-    select(matches('^COMID$|^full0')) %>% 
+    select(matches(paste0('^COMID$|^', modls, '0'))) %>% 
     gather('var', 'val', -COMID) %>% 
     arrange(COMID, var) %>% 
     group_by(COMID) %>% 
@@ -24,11 +28,11 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
       datcut = map(data, function(x){
         
         # get quantile labels to filter
-        lovl <- 100 * likes
-        hivl <- 100 * (1 -  likes) 
+        lovl <- 100 * tails
+        hivl <- 100 * (1 -  tails) 
         vls <- c(lovl, hivl) %>% 
           str_pad(2, pad = '0') %>% 
-          paste0('full0.', .)
+          paste0(modls, '0.', .)
         
         # filter by quantile labels and median
         x <- x %>% 
@@ -39,7 +43,7 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
         
       }),
       
-      medv = map(data, ~ filter(.x, var %in% 'full0.50') %>% .$val), 
+      medv = map(data, ~ filter(.x, var %in% paste0(modls, '0.50')) %>% .$val), 
       strcls = map(datcut, function(x){
         
         # return NA if any zero values in predictions
@@ -86,20 +90,24 @@ getcls <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constra
 #' 
 #' @param datin sf object with stream COMIDS and quantile expectations
 #' @param thrsh numeric for CSCI scoring thresholds
-#' @param likes numeric for tails to truncate expectations for overlap with thrsh
+#' @param tails numeric for tails to truncate expectations for overlap with thrsh
+#' @param modls chr string for selecting core (simple) or full model for expectations
 #' @param lbs chr string labels for interval classifications
 #' 
-#' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by likes, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
-getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
+#' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
+getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full'), lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
 
   # sanity check
-  if(likes >= 0.5)
-    stop('likes must be less than 0.5')
+  if(tails >= 0.5)
+    stop('tails must be less than 0.5')
+  
+  # models argument
+  modls <- match.arg(modls)
   
   dat <- datin
   st_geometry(dat) <- NULL
   dat <- dat %>% 
-    select(matches('^COMID$|^full0')) %>% 
+    select(matches(paste0('^COMID$|^', modls, '0'))) %>% 
     gather('var', 'val', -COMID) %>% 
     arrange(COMID, var) %>% 
     group_by(COMID) %>% 
@@ -116,11 +124,11 @@ getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constr
         } 
         
         # get quantile labels to filter
-        lovl <- 100 * likes
-        hivl <- 100 * (1 -  likes) 
+        lovl <- 100 * tails
+        hivl <- 100 * (1 -  tails) 
         vls <- c(lovl, hivl) %>% 
           str_pad(2, pad = '0') %>% 
-          paste0('full0.', .)
+          paste0(modls, '0.', .)
         
         # filter by quantile labels and median
         rngs <- x %>% 
@@ -158,9 +166,9 @@ getcls2 <- function(datin, thrsh = 0.79, likes = 0.05, lbs = list('likely constr
 #' @param datin sf object with stream COMIDS and quantile expectations
 #' @param scrs CSCI scores by COMID and StationCode
 #' @param thrsh numeric for CSCI scoring thresholds
-#' @param likes numeric for tails to truncate expectations for overlap with thrsh
+#' @param tails numeric for tails to truncate expectations for overlap with thrsh
 #' 
-site_exp <- function(datin, scrs, thrsh, likes, 
+site_exp <- function(datin, scrs, thrsh, tails, 
                      lbs = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){
   
   # site csci scores
@@ -171,7 +179,7 @@ site_exp <- function(datin, scrs, thrsh, likes,
   # filter comids with csci scores, classify, join with scores
   incl <- datin %>% 
     filter(COMID %in% scrs$COMID) %>% 
-    getcls(thrsh = thrsh, likes = likes) %>% 
+    getcls(thrsh = thrsh, tails = tails) %>% 
     mutate(COMID = as.character(COMID)) %>% 
     left_join(scrs, by = 'COMID') %>% 
     arrange(medv) %>% 
