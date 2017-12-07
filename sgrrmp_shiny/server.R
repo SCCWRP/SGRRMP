@@ -240,7 +240,7 @@ server <- function(input, output) {
   })
   
   # summary tables
-  output$tab_sum <- renderDataTable({
+  output$tab_sum <- DT::renderDataTable({
     
     typs <- input$typs
     
@@ -250,23 +250,34 @@ server <- function(input, output) {
       totab <- scr_exp() %>% 
         dplyr::select(strcls, perf) %>% 
         group_by(strcls, perf) %>% 
-        summarise(n = n()) %>% 
-        na.omit
+        summarise(Sites = n()) %>% 
+        na.omit %>% 
+        rename(
+          `Biological expectation` = strcls,
+          `Performance` = perf
+        )
 
     # summary table by csci type            
     } else {
-      
+
       totab <- scr_exp() %>% 
-        dplyr::select(strcls, typeoc, typelv) %>% 
-        group_by(strcls, typeoc, typelv) %>% 
-        summarise(n = n()) %>% 
+        dplyr::select(strcls, perf, typeoc, typelv) %>% 
+        group_by(strcls, perf, typeoc, typelv) %>% 
+        summarise(Sites = n()) %>% 
         na.omit %>% 
-        arrange(`typelv`)
+        arrange(`typelv`) %>% 
+        rename(
+          `Biological expectation` = strcls,
+          `Performance` = perf,
+          `Observed score` = typeoc,
+          Type = typelv
+        ) %>% 
+        mutate(Type = gsub('^Type|^Type0', '', Type))
       
     }
     
     return(totab)
       
-  })
+  }, options = list(dom = 't'), rownames = F)
    
 }

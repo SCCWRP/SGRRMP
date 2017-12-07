@@ -133,7 +133,8 @@ ui <- fluidPage(
           # table output
           column(width = 12, 
           
-            dataTableOutput('tab_sum')
+            DT::dataTableOutput('tab_sum'), 
+            HTML('<p></p>')
                        
           )
           
