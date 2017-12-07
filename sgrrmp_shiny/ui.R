@@ -126,10 +126,21 @@ ui <- fluidPage(
                 
           ) 
                  
-        )
+        ), 
         
+        tabPanel('Table', 
+                 
+          # table output
+          column(width = 12, 
+          
+            dataTableOutput('tab_sum')
+                       
+          )
+          
+        )
+                  
       )
-                
+      
     )
     
   )

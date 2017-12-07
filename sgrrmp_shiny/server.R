@@ -239,5 +239,34 @@ server <- function(input, output) {
     
   })
   
+  # summary tables
+  output$tab_sum <- renderDataTable({
+    
+    typs <- input$typs
+    
+    # summary table by csci performance
+    if(typs == 'perf'){
+      
+      totab <- scr_exp() %>% 
+        dplyr::select(strcls, perf) %>% 
+        group_by(strcls, perf) %>% 
+        summarise(n = n()) %>% 
+        na.omit
+
+    # summary table by csci type            
+    } else {
+      
+      totab <- scr_exp() %>% 
+        dplyr::select(strcls, typeoc, typelv) %>% 
+        group_by(strcls, typeoc, typelv) %>% 
+        summarise(n = n()) %>% 
+        na.omit %>% 
+        arrange(`typelv`)
+      
+    }
+    
+    return(totab)
+      
+  })
    
 }

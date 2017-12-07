@@ -213,8 +213,8 @@ site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over p
     mutate(bythrsh = ifelse(csci < thrsh, 0, 1)) %>%
     unite('typeprf', strcls_int, perf, bythrsh, remove = FALSE) %>% 
     mutate(
-      typelv = typ_lbs(typeprf),
-      typeoc = typ_lbs(typeprf, obs_sc = T)
+      typelv = typ_lbs(typeprf, thrsh = thrsh, tails = tails),
+      typeoc = typ_lbs(typeprf, thrsh = thrsh, tails = tails, obs_sc = T)
       ) %>% 
     dplyr::select(-typeprf, -bythrsh)
 
