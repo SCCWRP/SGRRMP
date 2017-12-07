@@ -1,27 +1,45 @@
 library(leaflet)
+library(shinyjs)
+library(shinyBS)
+
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
+shinyUI(fluidPage(
+  
+  theme = 'styles.css',
+  useShinyjs(),
   
   # Application title
   titlePanel('Stream classification in the San Gabriel River Watershed'),
   
   fluidRow(
-    
+  
+    column(width = 12, 
+      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on ranges of predicted CSCI scores for a stream reach and user-defined parameters for CSCI tresholds and range cutoffs (tails).  The user may also choose the model used for predicting CSCI scores as the full (all predictors) or core (selectd predictors) model.  Site classifications for CSCI scores are defined as over-performing, expected, and under-performing or as one of twelve types within each stream reach expectation.  Stream reach expectations are defind as likely constrained, undetermined, or likely unconstrained.')
+    ),
+      
     column(width = 12, 
       
       # prediction model
       column(width = 3, 
-            selectInput(inputId  =  'modls',
-                        label = h4('Prediction model:'),
-                        choices = c('core', 'full'), selected = 'full')
+            popify(
+              selectInput(inputId  =  'modls',
+                          label = h4('Prediction model:'),
+                          choices = c('core', 'full'), selected = 'full'), 
+              title = NULL,
+              content = 'Pick the prediction model for expected CSCI scores at a stream reach.  The full model includes all predictors and the core model includes only selected predictors.'
+            )
       ),    
       
       # which site classification
       column(width = 3, 
-             selectInput(inputId  =  'typs',
+            popify(
+              selectInput(inputId  =  'typs',
                          label = h4('Site classifications:'),
-                         choices = c('perf', 'type'), selected = 'perf')
+                         choices = c('perf', 'type'), selected = 'perf'),
+              title = NULL, 
+              content = 'Pick the site classifications to display.  The "perf" classification shows sites as over-performing, expected, or under-performing.  The "type" classification shows sites as one of twelve types based on the stream reach expectation, tails on the expectation, and the CSCI threshold.'
+            )
       ),           
       
       # select point radius
@@ -74,7 +92,7 @@ ui <- fluidPage(
              
       )
     
-    ), 
+    ),
     
     tabPanel('Estimated constraints',
     
@@ -146,4 +164,4 @@ ui <- fluidPage(
     
   )
             
-)
+))
