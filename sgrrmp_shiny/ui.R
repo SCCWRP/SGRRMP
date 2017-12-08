@@ -27,7 +27,8 @@ shinyUI(fluidPage(
                           label = h4('Prediction model:'),
                           choices = c('core', 'full'), selected = 'full'), 
               title = NULL,
-              content = 'Pick the prediction model for expected CSCI scores at a stream reach.  The full model includes all predictors and the core model includes only selected predictors.'
+              content = 'Pick the prediction model for expected CSCI scores at a stream reach.  The full model includes all predictors and the core model includes only selected predictors.',
+              placement = 'top'
             )
       ),    
       
@@ -38,7 +39,8 @@ shinyUI(fluidPage(
                          label = h4('Site classifications:'),
                          choices = c('perf', 'type'), selected = 'perf'),
               title = NULL, 
-              content = 'Pick the site classifications to display.  The "perf" classification shows sites as over-performing, expected, or under-performing.  The "type" classification shows sites as one of twelve types based on the stream reach expectation, tails on the expectation, and the CSCI threshold.'
+              content = 'Pick the site classifications to display.  The "perf" classification shows sites as over-performing, expected, or under-performing.  The "type" classification shows sites as one of twelve types based on the stream reach expectation, tails on the expectation, and the CSCI threshold.',
+              placement = 'top'
             )
       ),           
       

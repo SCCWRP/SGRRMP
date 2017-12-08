@@ -2,8 +2,7 @@ name: sgrrmp_shiny
 title:
 account: beckmw
 server: shinyapps.io
-hostUrl: https://api.shinyapps.io/v1
 appId: 240013
-bundleId: 1120060
+bundleId: 1122584
 url: https://beckmw.shinyapps.io/sgrrmp_shiny/
-when: 1512610482.88325
+when: 1512712236.26363
