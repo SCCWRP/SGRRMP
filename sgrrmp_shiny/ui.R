@@ -74,7 +74,7 @@ shinyUI(fluidPage(
     
   tabsetPanel(
     
-    tabPanel('Score distributions',
+    tabPanel('Maps',
              
       # select percentile        
       column(width = 4, 
@@ -117,79 +117,68 @@ shinyUI(fluidPage(
         leafletOutput('map', width = '100%', height = 550), 
         h3()
              
-      )
-    
-    ),
-    
-    tabPanel('Estimated constraints',
-    
-      column(width = 12,
-            
-        # select CSCI threshold       
-        column(width = 4, 
-               sliderInput('thrsh', 
-                           label = h4("CSCI threshold:"), 
-                           min = 0, 
-                           max = 1.5,
-                           value = 0.79, 
-                           step = 0.01
-               )
-        ),
-        
-        # selected tails
-        column(width = 4, 
-               sliderInput('tails', 
-                           label = h4("Expectation tails:"), 
-                           min = 0.05, 
-                           max = 0.45,
-                           value = 0.05, 
-                           step = 0.05
-               )
-        )
-            
-      ),       
+      ),
+      
+      # select CSCI threshold       
+      column(width = 4, 
              
-      tabsetPanel(type = 'pills', 
-        
-        tabPanel('Map',
-       
-          # map output
-          column(width = 12,
-                
-            leafletOutput('map_exp', width = '100%', height = 550), 
-            h3()
-                
-          ) 
-          
-        ),
-          
-        tabPanel('Plot', 
-               
-          # plot output
-          column(width = 12,
-                
-            plotOutput('plo_exp', width = '90%', height = 850)
-                
-          ) 
-                 
-        ), 
-        
-        tabPanel('Table', 
-                 
-          # table output
-          column(width = 12, 
-          
-            DT::dataTableOutput('tab_sum'), 
-            HTML('<p></p>')
-                       
+            sliderInput('thrsh', 
+                        label = h4("CSCI threshold:"), 
+                        min = 0, 
+                        max = 1.5,
+                        value = 0.79, 
+                        step = 0.01
+            )
+            
+      ),
+      
+      # selected tails
+      column(width = 4, 
+            sliderInput('tails', 
+                        label = h4("Expectation tails:"), 
+                        min = 0.05, 
+                        max = 0.45,
+                        value = 0.05, 
+                        step = 0.05
           )
           
-        )
-                  
-      )
+      ),
       
-    )
+      # map output
+      column(width = 12,
+             
+             leafletOutput('map_exp', width = '100%', height = 550), 
+             h3()
+
+      ) 
+      
+    ),
     
-  )
+    tabPanel('Plots',
+
+      # plot output
+      column(width = 12,
             
+        plotOutput('plo_exp', width = '90%', height = 850)
+            
+      ) 
+             
+    ), 
+        
+    tabPanel('Table', 
+                 
+      # table output
+      column(width = 12, 
+      
+        DT::dataTableOutput('tab_sum'), 
+        HTML('<p></p>')
+                   
+      )
+    
+    )
+                  
+  )
+      
 ))
+            
+
