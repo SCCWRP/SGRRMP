@@ -309,4 +309,3 @@ typ_lbs <- function(vec, thrsh = 0.79, tails = 0.05, obs_sc = FALSE){
   return(vec)
   
 }
-  

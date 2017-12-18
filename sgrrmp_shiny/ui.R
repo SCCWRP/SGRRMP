@@ -1,7 +1,7 @@
 library(leaflet)
 library(shinyjs)
 library(shinyBS)
-
+library(shinyWidgets)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -88,11 +88,34 @@ shinyUI(fluidPage(
         )
         
       ),
+      
+      column(width = 2,
+        
+        materialSwitch('difr', 
+                      label = h4('CSCI as difference:'), 
+                      status = 'primary',
+                      right = F
+                      )
+        
+      ),
+      
+      column(width = 4,
+             
+             sliderInput('jitr', 
+                         label = h4("Jitter overlaps:"), 
+                         min = 0, 
+                         max = 500,
+                         value = 0, 
+                         step = 25
+             )
+             
+      ),
     
       # map output
       column(width = 12,
         
-        leafletOutput('map', width = '100%', height = 550)
+        leafletOutput('map', width = '100%', height = 550), 
+        h3()
              
       )
     
@@ -133,7 +156,8 @@ shinyUI(fluidPage(
           # map output
           column(width = 12,
                 
-            leafletOutput('map_exp', width = '100%', height = 550)
+            leafletOutput('map_exp', width = '100%', height = 550), 
+            h3()
                 
           ) 
           

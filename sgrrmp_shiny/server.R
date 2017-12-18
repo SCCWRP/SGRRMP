@@ -12,20 +12,36 @@ load('data/spat.RData')
 # csci scores at sites
 load('data/scrs.RData')
 
-# color domain
+# color domain, csci scores and expectations
 dmn <- spat %>% 
-  select(matches('^full0_|^core0_')) %>% 
+  select(matches('full|core')) %>% 
   data.frame %>% 
   select(-geometry) %>% 
   gather('var', 'val') %>% 
   .$val %>% 
-  c(., scrs$csci)
+  c(., scrs$csci) %>% 
+  range(na.rm = T)
 
-# color palette
+dmn_difr <- spat %>% 
+  select(matches('full|core')) %>% 
+  data.frame %>% 
+  select(-geometry) %>% 
+  gather('var', 'val') %>% 
+  .$val %>% 
+  range(na.rm = T)
+dmn_difr <- c(min(scrs$csci) - dmn_difr[2], max(scrs$csci) - dmn_difr[1])
+ 
+# color palette for csci scores
 pal <- colorNumeric(
   palette = c('#d7191c', '#abd9e9', '#2c7bb6'),
   na.color = 'yellow',
   domain = dmn)
+
+# color palette for csci score differences
+pal_difr <- colorNumeric(
+  palette = c('black', 'purple', 'white', 'darkgreen', 'black'),
+  na.color = 'yellow',
+  domain = dmn_difr)
 
 # color palette for stream expectations
 pal_exp <- colorFactor(
@@ -35,7 +51,7 @@ pal_exp <- colorFactor(
 
 # color palette for CSCI performance
 pal_prf <- colorFactor(
-  palette = c('white', 'blue', 'red'),
+  palette = RColorBrewer::brewer.pal(9, 'Greys')[c(1, 7, 4)],#c('white', 'blue', 'red'),
   na.color = 'yellow',
   domain = c('expected', 'over performing', 'under performing'))
 
@@ -87,6 +103,34 @@ server <- function(input, output) {
     
   })
   
+  # CSCI scores, take difference from expectation if difr is true
+  csci <- reactive({
+  
+    difr <- input$difr
+    jitr <- input$jitr
+
+    out <- scrs
+    if(difr){
+      
+      out <- dat() %>% 
+        select(COMID, lns) %>% 
+        mutate(COMID = as.character(COMID)) %>% 
+        left_join(scrs, ., by = 'COMID') %>% 
+        mutate(csci = csci - lns)
+      
+    }
+    
+    # jitter scores with overlapping lat/lon
+    out <- out %>% 
+      mutate(
+        lat = ifelse(duplicated(lat), jitter(lat, factor = jitr), lat),
+        long = ifelse(duplicated(long), jitter(long, factor = jitr), long)
+      )
+
+    return(out)
+      
+  })
+  
   # CSCI scores and stream condition expectations
   scr_exp <- reactive({
     
@@ -117,7 +161,7 @@ server <- function(input, output) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
       addProviderTiles(providers$CartoDB.Positron)
-    
+
   )
   
   # reactive maps
@@ -127,57 +171,87 @@ server <- function(input, output) {
     ptsz <- input$pt_sz
     lnsz <- input$ln_sz
     typs <- input$typs
-
+    difr <- input$difr
+    
+    # reactives
+    dat <- dat()
+    dat_exp <- dat_exp()
+    scr_exp <- scr_exp()
+    
     # score expectations
-    leafletProxy("map", data = dat()) %>%
+    exp <- leafletProxy("map", data = dat) %>%
       clearMarkers() %>%
       clearShapes() %>% 
       clearControls() %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns), 
-                   label = ~paste('Likely score:', as.character(round(lns, 2)))
-      ) %>% 
-      addCircleMarkers(data = scrs, lng = ~long, lat = ~lat, radius = ptsz, weight = 0, fillOpacity = 0.8, 
-                       label = ~paste('CSCI:', as.character(round(csci, 2))),
-                       fillColor = ~pal(csci)
+                   label = ~paste0(COMID, ', Likely score:', as.character(round(lns, 2)))
       ) %>% 
       addLegend("topright", pal = pal, values = ~lns,
                 title = "Likely score",
                 opacity = 1
       )
     
+    
+    # csci scores if false, otherwise differences
+    if(difr){
+
+      exp %>% 
+        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
+                         fillColor = ~pal_difr(csci), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_difr, values = csci()$csci,
+                  title = "CSCI difference",
+                  opacity = 1
+        )
+      
+    } else {
+      
+      exp %>% 
+        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
+                         fillColor = ~pal(csci), color = 'black'
+        )
+      
+    }
+      
     # condition expectations
-    exp_bs <- leafletProxy("map_exp", data = dat_exp()) %>%
+    exp_bs <- leafletProxy("map_exp", data = dat_exp) %>%
       clearMarkers() %>%
       clearShapes() %>% 
       clearControls()%>% 
-      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
-                   label = ~paste('Stream class:', strcls)
-      ) %>% 
       addLegend("topright", pal = pal_exp, values = ~strcls,
                 title = "Expected classification",
                 opacity = 1
+      ) %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
       )
-    
+      
     # conditions expections as site performance
     if(typs == 'perf'){
       
       exp_bs %>% 
-        addCircleMarkers(data = scr_exp(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
-                         label = ~paste0('CSCI: ', as.character(round(csci, 2)), ', ', perf),
+        addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf),
                          fillColor = ~pal_prf(perf), color = 'black'
-        ) #%>% 
-        # addLegend("topright", pal = pal_prf, values = ~perf,
-        #           title = "CSCI performance",
-        #           opacity = 1
-        # )
+        ) %>% 
+        addLegend("topright", pal = pal_prf, values = scr_exp$perf,
+                  title = "CSCI performance",
+                  opacity = 1
+        )
   
     # condition expectations as site types    
     } else {
       
       exp_bs %>% 
-        addCircleMarkers(data = scr_exp(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
-                         label = ~paste0('CSCI: ', as.character(round(csci, 2)), ', ', typelv),
+        addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', typelv),
                          fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = scr_exp$typelv,
+                  title = "CSCI score type",
+                  opacity = 1
         )
       
     }
