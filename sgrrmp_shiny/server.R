@@ -4,6 +4,8 @@ library(tidyverse)
 library(leaflet)
 library(stringr)
 library(scales)
+library(leaflet.minicharts)
+library(manipulateWidget)
 source('R/funcs.R')
 
 # spatial comid data
@@ -151,7 +153,8 @@ server <- function(input, output) {
 
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron)
+      addProviderTiles(providers$CartoDB.Positron) %>% 
+      syncWith('maps')
     
   )
   
@@ -160,7 +163,8 @@ server <- function(input, output) {
     
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron)
+      addProviderTiles(providers$CartoDB.Positron) %>% 
+      syncWith('maps')
 
   )
   
@@ -195,7 +199,7 @@ server <- function(input, output) {
     # csci scores if false, otherwise differences
     if(difr){
 
-      exp %>% 
+      exp <- exp %>% 
         addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
                          fillColor = ~pal_difr(csci), color = 'black'
@@ -207,7 +211,7 @@ server <- function(input, output) {
       
     } else {
       
-      exp %>% 
+      exp <- exp %>% 
         addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
                          fillColor = ~pal(csci), color = 'black'
@@ -231,7 +235,7 @@ server <- function(input, output) {
     # conditions expections as site performance
     if(typs == 'perf'){
       
-      exp_bs %>% 
+      exp_bs <- exp_bs %>% 
         addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf),
                          fillColor = ~pal_prf(perf), color = 'black'
@@ -244,7 +248,7 @@ server <- function(input, output) {
     # condition expectations as site types    
     } else {
       
-      exp_bs %>% 
+      exp_bs <- exp_bs %>% 
         addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', typelv),
                          fillColor = ~pal_typ(typelv), color = 'black'
@@ -255,7 +259,10 @@ server <- function(input, output) {
         )
       
     }
-    
+  
+  # sync the maps
+  combineWidgets(exp, exp_bs)
+  
   })
   
   # plot of csci scores and expectations by station code
