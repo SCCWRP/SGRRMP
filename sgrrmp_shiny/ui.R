@@ -2,6 +2,7 @@ library(leaflet)
 library(shinyjs)
 library(shinyBS)
 library(shinyWidgets)
+library(plotly)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -44,28 +45,6 @@ shinyUI(fluidPage(
               placement = 'right', 
               options=list(container = 'body')
             )
-      ),           
-      
-      # select point radius
-      column(width = 3,
-             sliderInput("pt_sz", 
-                         label = h4("Point size:"), 
-                         min = 0, 
-                         max = 15,
-                         value = 4, 
-                         step = 1
-             )
-      ),
-      
-      # select line size
-      column(width = 3,
-             sliderInput("ln_sz", 
-                         label = h4("Line size:"), 
-                         min = 0, 
-                         max = 5,
-                         value = 1, 
-                         step = 0.1
-             )
       )
       
     )
@@ -75,87 +54,140 @@ shinyUI(fluidPage(
   tabsetPanel(
     
     tabPanel('Maps',
+
+      h5('These two maps show stream reach classifications by COMID and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted CSCI scores for a COMID and measured CSCI score from field samples.  The', strong('right map'), 'shows the CSCI score expectation and the relative performance of a monitoring station.'),       
+      # select point radius
+      column(width = 12, 
              
-      # select percentile        
-      column(width = 4, 
-             
+        h5('These sliders control the plot aesthetics. Use them to change the point/line sizes and apply a jitter for overlapping stations on the maps.'), 
+        column(width = 4,
+              sliderInput("pt_sz", 
+                          label = h6("Point size:"), 
+                          min = 0, 
+                          max = 15,
+                          value = 4, 
+                          step = 1
+              )
+        ),
+        
+        # select line size
+        column(width = 4,
+              sliderInput("ln_sz", 
+                          label = h6("Line size:"), 
+                          min = 0, 
+                          max = 5,
+                          value = 1, 
+                          step = 0.1
+              )
+        ),          
+        
+        column(width = 4,
+               
+               sliderInput('jitr', 
+                           label = h6("Jitter overlaps:"), 
+                           min = 0, 
+                           max = 500,
+                           value = 0, 
+                           step = 25
+               )
+               
+        )
+        
+      ),
+         
+      column(width = 6, 
+        
+        h5('These controls change the attributes in the left map.  The first slider controls which percentile of predicted CSCI scores is shown for the stream hydrography lines.  The toggle switch controls the CSCI scores shown at each sampling station.  The scores from field samples are shown when the switch is off and the differences of the scores with the predictions are shown when the switch is on.'),      
+         
+        # which csci percentile to show
         sliderInput('ptile',
-                    label = h4("Percentile estimated score:"),
+                    label = h6("Percentile estimated score:"),
                     min = 0.05,
                     max = 0.95,
                     value = 0.5,
                     step = 0.05
-        )
-        
-      ),
-      
-      column(width = 2,
-        
+        ),
+
+        # show csci differences   
         materialSwitch('difr', 
-                      label = h4('CSCI as difference:'), 
+                      label = h6('CSCI as difference:'), 
                       status = 'primary',
                       right = F
-                      )
+        )
         
-      ),
+      ), 
       
-      column(width = 4,
+      column(width = 6,
+          
+        h5('These controls change the attributes in the right map.  The first slider controls the CSCI threshold and the second slider controls the tails of the predicted CSCI scores at each stream reach. Overlap of the tails with the CSCI threshold determines the performance classification of a reach and expected performance of the CSCI score at a sampling station.'),      
              
-             sliderInput('jitr', 
-                         label = h4("Jitter overlaps:"), 
-                         min = 0, 
-                         max = 500,
-                         value = 0, 
-                         step = 25
-             )
-             
+        # select CSCI threshold, master       
+        sliderInput('thrsh', 
+                   label = h6("CSCI threshold:"), 
+                   min = 0, 
+                   max = 1.5,
+                   value = 0.79, 
+                   step = 0.01
+
+        ),
+      
+        # selected tails, master
+        sliderInput('tails', 
+                   label = h6("Expectation tails:"), 
+                   min = 0.05, 
+                   max = 0.45,
+                   value = 0.05, 
+                   step = 0.05
+        )
+
       ),
     
       # map output
-      column(width = 12,
+      column(width = 6,
         
         leafletOutput('map', width = '100%', height = 550), 
         h3()
              
       ),
-      
-      # select CSCI threshold       
-      column(width = 4, 
-             
-            sliderInput('thrsh', 
-                        label = h4("CSCI threshold:"), 
-                        min = 0, 
-                        max = 1.5,
-                        value = 0.79, 
-                        step = 0.01
-            )
-            
-      ),
-      
-      # selected tails
-      column(width = 4, 
-            sliderInput('tails', 
-                        label = h4("Expectation tails:"), 
-                        min = 0.05, 
-                        max = 0.45,
-                        value = 0.05, 
-                        step = 0.05
-          )
-          
-      ),
-      
+     
       # map output
-      column(width = 12,
+      column(width = 6,
              
              leafletOutput('map_exp', width = '100%', height = 550), 
              h3()
 
       ) 
-      
+
     ),
     
-    tabPanel('Plots',
-
+    tabPanel('Plot',
+      
+      column(width = 3,
+             
+        # select CSCI threshold       
+        sliderInput('thrsh2', 
+                   label = h6("CSCI threshold:"), 
+                   min = 0, 
+                   max = 1.5,
+                   value = 0.79, 
+                   step = 0.01
+          )
+        
+      ),   
+      
+      column(width = 3, 
+             
+        # selected tails
+        sliderInput('tails2', 
+                   label = h6("Expectation tails:"), 
+                   min = 0.05, 
+                   max = 0.45,
+                   value = 0.05, 
+                   step = 0.05
+          )
+        
+      ),
+    
       # plot output
       column(width = 12,
             
@@ -166,7 +198,33 @@ shinyUI(fluidPage(
     ), 
         
     tabPanel('Table', 
-                 
+       
+      column(width = 3,
+            
+            # select CSCI threshold       
+            sliderInput('thrsh3', 
+                        label = h6("CSCI threshold:"), 
+                        min = 0, 
+                        max = 1.5,
+                        value = 0.79, 
+                        step = 0.01
+            )
+            
+      ),   
+      
+      column(width = 3, 
+            
+            # selected tails
+            sliderInput('tails3', 
+                        label = h6("Expectation tails:"), 
+                        min = 0.05, 
+                        max = 0.45,
+                        value = 0.05, 
+                        step = 0.05
+            )
+            
+      ),
+
       # table output
       column(width = 12, 
       

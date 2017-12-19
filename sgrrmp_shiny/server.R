@@ -6,6 +6,7 @@ library(stringr)
 library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
+library(plotly)
 source('R/funcs.R')
 
 # spatial comid data
@@ -65,7 +66,7 @@ pal_typ <- colorFactor(
   )
 
 # server logic
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # data to plot, polylines with score expections
   dat <- reactive({
@@ -142,7 +143,14 @@ server <- function(input, output) {
     modls <- input$modls
     
     # process
-    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tails, modls = modls)
+    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tails, modls = modls) %>% 
+      select(-lat, -long) 
+    
+    # assign csci station locations for jittr
+    incl <- csci() %>% 
+      select(StationCode, lat, long) %>% 
+      mutate(StationCode = factor(StationCode, levels = levels(incl$StationCode))) %>% 
+      left_join(incl, ., by = 'StationCode')
 
     return(incl)
     
@@ -168,6 +176,58 @@ server <- function(input, output) {
 
   )
   
+  ##
+  # these update inputs that are duplicated across tabs
+  trs <- ''
+  tls <- ''
+  
+  # thrsh
+  observe({
+    if (trs != input$thrsh){
+      updateSliderInput(session, "thrsh2", NULL, input$thrsh)
+      updateSliderInput(session, "thrsh3", NULL, input$thrsh)
+      trs <<- input$thrsh
+    }
+  })
+  observe({
+    if (trs != input$thrsh2){
+      updateSliderInput(session, "thrsh", value = input$thrsh2)
+      updateSliderInput(session, "thrsh3", value = input$thrsh2)
+      trs <<- input$thrsh2
+    }
+  })
+  observe({
+    if (trs != input$thrsh3){
+      updateSliderInput(session, "thrsh", value = input$thrsh3)
+      updateSliderInput(session, "thrsh2", value = input$thrsh3)
+      trs <<- input$thrsh3
+    }
+  })
+  
+  # tails
+  observe({
+    if (trs != input$tails){
+      updateSliderInput(session, "tails2", NULL, input$tails)
+      updateSliderInput(session, "tails3", NULL, input$tails)
+      trs <<- input$tails
+    }
+  })
+  observe({
+    if (trs != input$tails2){
+      updateSliderInput(session, "tails", value = input$tails2)
+      updateSliderInput(session, "tails3", value = input$tails2)
+      trs <<- input$tails2
+    }
+  })
+  observe({
+    if (trs != input$tails3){
+      updateSliderInput(session, "tails", value = input$tails3)
+      updateSliderInput(session, "tails2", value = input$tails3)
+      trs <<- input$tails3
+    }
+  })
+  
+  ##
   # reactive maps
   observe({
     
