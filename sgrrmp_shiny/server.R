@@ -6,7 +6,6 @@ library(stringr)
 library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
-library(plotly)
 source('R/funcs.R')
 
 # spatial comid data
