@@ -14,7 +14,7 @@ shinyUI(fluidPage(
   
   fluidRow(
   
-    column(width = 2, img(src = "sccwrp_logo.jpg", width = 160)),
+    column(width = 2, img(src = "sccwrp_logo.jpg", width = 130), align = 'center'),
     
     column(width = 10, 
       h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on ranges of predicted CSCI scores for a stream reach and user-defined parameters for CSCI tresholds and range cutoffs (tails).  The user may also choose the model used for predicting CSCI scores as the full (all predictors) or core (selected predictors) model.  Site classifications for CSCI scores are defined as over-performing, expected, and under-performing or as one of twelve types within each stream reach expectation.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained.')
@@ -62,7 +62,7 @@ shinyUI(fluidPage(
     
     tabPanel('Maps',
 
-      h5('These two maps show stream reach classifications by COMID and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted CSCI scores for a COMID and measured CSCI score from field samples.  The', strong('right map'), 'shows the CSCI score expectation and the relative performance of a monitoring station.'),       
+      h5('These two maps show stream reach classifications by COMID and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted CSCI scores for a COMID and measured CSCI score from field samples.  The', strong('right map'), 'shows the CSCI score expectation for a COMID and the relative performance of a monitoring station.'),       
       # select point radius
       column(width = 12, 
              
@@ -104,7 +104,7 @@ shinyUI(fluidPage(
          
       column(width = 6, 
         
-        h5('These controls change the attributes in the left map.  The first slider controls which percentile of predicted CSCI scores is shown for the stream hydrography lines.  The toggle switch controls the CSCI scores shown at each sampling station.  The scores from field samples are shown when the switch is off and the differences of the scores with the predictions are shown when the switch is on.'),      
+        h5('These controls change the attributes in the left map.  The first slider controls which percentile of predicted CSCI scores is shown for the stream hydrography lines.  The toggle switch controls the CSCI scores shown at each sampling station.  The scores from field samples are shown when the switch is off and the differences between the observed scores and the COMID predictions are shown when the switch is on.'),      
          
         # which csci percentile to show
         sliderInput('ptile',
@@ -117,7 +117,7 @@ shinyUI(fluidPage(
 
         # show csci differences   
         materialSwitch('difr', 
-                      label = h6('CSCI as difference:'), 
+                      label = h6('CSCI observed - predicted:'), 
                       status = 'primary',
                       right = F
         )
@@ -126,7 +126,7 @@ shinyUI(fluidPage(
       
       column(width = 6,
           
-        h5('These controls change the attributes in the right map.  The first slider controls the CSCI threshold and the second slider controls the tails of the predicted CSCI scores at each stream reach. Overlap of the tails with the CSCI threshold determines the performance classification of a reach and expected performance of the CSCI score at a sampling station.'),      
+        h5('These controls change the attributes in the right map.  The first slider controls the CSCI threshold and the second slider controls the certainty range of the predicted CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the performance classification of a reach and expected performance of the CSCI score at a sampling station.'),      
              
         # select CSCI threshold, master       
         sliderInput('thrsh', 
