@@ -390,6 +390,6 @@ server <- function(input, output, session) {
       
     return(totab)
       
-  }, options = list(dom = 't'), rownames = F)
+  }, rownames = F, options = list(dom = 't', pageLength = 12))
    
 }

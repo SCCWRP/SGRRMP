@@ -208,7 +208,7 @@ shinyUI(fluidPage(
         
     tabPanel('Table', 
 
-      h5('This table summarizes the sampling station performance for CSCI scores shown in the map and plot in the other tabs. The "type" categories can be identified from the table. The model and type selectors on the top will also change the table.'),
+      h5('This table summarizes the sampling station performance for CSCI scores shown in the map and plot in the other tabs. The "type" categories can be identified from the table. The model selector on the top will also change the table.'),
              
       column(width = 3,
             

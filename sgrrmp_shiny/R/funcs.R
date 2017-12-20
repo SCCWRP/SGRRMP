@@ -366,7 +366,7 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely co
       Type = typelv
     ) %>%
     mutate(Type = gsub('^Type|^Type0', '', Type))
-  browser()
+  
   return(totab)
 
 }
