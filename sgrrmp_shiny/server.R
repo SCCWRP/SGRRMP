@@ -86,16 +86,23 @@ server <- function(input, output, session) {
     
   })
   
+  # tails input as reactive, passed to multiple
+  tlinp <- reactive({
+    
+    tails <- input$tails %>% gsub('More certain|Less certain|\\(|\\)|\\s+', '', .) %>% as.numeric
+    return(tails)
+    
+  })
+  
   # data to plot, polylines with condition expectations
   dat_exp <- reactive({
     
     # inputs
     thrsh <- input$thrsh
-    tails <- input$tails %>% as.numeric
     modls <- input$modls
     
     # get biological condition expectations
-    cls <- getcls2(spat, thrsh = thrsh, tails = tails, modls = modls)
+    cls <- getcls2(spat, thrsh = thrsh, tails = tlinp(), modls = modls)
   
     # join with spatial data
     out <- spat %>% 
@@ -138,11 +145,10 @@ server <- function(input, output, session) {
     
     # inputs
     thrsh <- input$thrsh
-    tails <- input$tails %>% as.numeric
     modls <- input$modls
     
     # process
-    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tails, modls = modls) %>% 
+    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tlinp(), modls = modls) %>% 
       select(-lat, -long) 
     
     # assign csci station locations for jittr
@@ -206,22 +212,22 @@ server <- function(input, output, session) {
   # tails
   observe({
     if (trs != input$tails){
-      updateSliderInput(session, "tails2", NULL, input$tails)
-      updateSliderInput(session, "tails3", NULL, input$tails)
+      updateSliderTextInput(session, "tails2", selected = input$tails)
+      updateSliderTextInput(session, "tails3", selected = input$tails)
       trs <<- input$tails
     }
   })
   observe({
     if (trs != input$tails2){
-      updateSliderInput(session, "tails", value = input$tails2)
-      updateSliderInput(session, "tails3", value = input$tails2)
+      updateSliderTextInput(session, "tails", selected = input$tails2)
+      updateSliderTextInput(session, "tails3", selected = input$tails2)
       trs <<- input$tails2
     }
   })
   observe({
     if (trs != input$tails3){
-      updateSliderInput(session, "tails", value = input$tails3)
-      updateSliderInput(session, "tails2", value = input$tails3)
+      updateSliderTextInput(session, "tails", selected = input$tails3)
+      updateSliderTextInput(session, "tails2", selected = input$tails3)
       trs <<- input$tails3
     }
   })
@@ -383,10 +389,9 @@ server <- function(input, output, session) {
   output$tab_sum <- DT::renderDataTable({
     
     thrsh <- input$thrsh
-    tails <- input$tails
     
     # summary table by csci type          
-    totab <- get_tab(scr_exp(), thrsh = thrsh, tails = tails)
+    totab <- get_tab(scr_exp(), thrsh = thrsh, tails = tlinp())
       
     return(totab)
       

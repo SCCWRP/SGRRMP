@@ -14,10 +14,10 @@ shinyUI(fluidPage(
   
   fluidRow(
   
-    column(width = 2, img(src = "sccwrp_logo.jpg", width = 130), align = 'center'),
+    column(width = 2, img(src = "logo.jpg", width = 200), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 10, 
-      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on ranges of predicted CSCI scores for a stream reach and user-defined parameters for CSCI tresholds and range cutoffs (tails).  The user may also choose the model used for predicting CSCI scores as the full (all predictors) or core (selected predictors) model.  Site classifications for CSCI scores are defined as over-performing, expected, and under-performing or as one of twelve types within each stream reach expectation.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained.')
+      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on ranges of predicted CSCI scores for a stream reach and user-defined parameters for CSCI tresholds and confidence range cutoffs.  The user may also choose the model used for predicting CSCI scores as the full (all predictors) or core (selected predictors) model.  Site classifications for CSCI scores are defined as over-performing, expected, and under-performing or as one of twelve types within each stream reach expectation.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained.')
     ),
 
     column(width = 12, 
@@ -36,7 +36,7 @@ shinyUI(fluidPage(
       # which site classification
       column(width = 6, 
              
-        h5('Pick the site classifications to display.  The "perf" classification shows sites as over-performing, expected, or under-performing.  The "type" classification shows sites as one of twelve types based on the stream reach expectation, tails on the expectation, and the CSCI threshold.')
+        h5('Pick the site classifications to display.  The "perf" classification shows sites as over-performing, expected, or under-performing.  The "type" classification shows sites as one of twelve types based on the stream reach expectation, CSCI threshold, and the confidence range.')
       
       ),
       
@@ -73,7 +73,9 @@ shinyUI(fluidPage(
                           min = 0, 
                           max = 15,
                           value = 4, 
-                          step = 1
+                          step = 1, 
+                          width = '400px', 
+                          ticks = FALSE
               )
         ),
         
@@ -84,7 +86,9 @@ shinyUI(fluidPage(
                           min = 0, 
                           max = 5,
                           value = 1, 
-                          step = 0.1
+                          step = 0.1, 
+                          width = '400px', 
+                          ticks = FALSE
               )
         ),          
         
@@ -95,7 +99,9 @@ shinyUI(fluidPage(
                            min = 0, 
                            max = 500,
                            value = 0, 
-                           step = 25
+                           step = 25, 
+                           width = '400px', 
+                           ticks = FALSE
                )
                
         )
@@ -108,18 +114,20 @@ shinyUI(fluidPage(
          
         # which csci percentile to show
         sliderInput('ptile',
-                    label = h6("Percentile estimated score:"),
-                    min = 0.05,
-                    max = 0.95,
-                    value = 0.5,
-                    step = 0.05
+          label = h6("Percentile estimated score:"),
+          min = 0.05,
+          max = 0.95,
+          value = 0.5,
+          step = 0.05, 
+          width = '600px', 
+          ticks = FALSE
         ),
 
         # show csci differences   
         materialSwitch('difr', 
-                      label = h6('CSCI observed - predicted:'), 
-                      status = 'primary',
-                      right = F
+          label = h6('CSCI observed - predicted:'), 
+          status = 'primary',
+          right = F
         )
         
       ), 
@@ -130,21 +138,23 @@ shinyUI(fluidPage(
              
         # select CSCI threshold, master       
         sliderInput('thrsh', 
-                   label = h6("CSCI threshold:"), 
-                   min = 0, 
-                   max = 1.5,
-                   value = 0.79, 
-                   step = 0.01
-
+           label = h6("CSCI threshold:"), 
+           min = 0, 
+           max = 1.5,
+           value = 0.79, 
+           step = 0.01,
+           width = '600px', 
+           ticks = FALSE
         ),
       
         # selected tails, master
-        sliderInput('tails', 
-                   label = h6("Expectation tails:"), 
-                   min = 0.05, 
-                   max = 0.45,
-                   value = 0.05, 
-                   step = 0.05
+        sliderTextInput(
+          inputId = "tails", 
+          label = h6("Confidence range (+/-):"),  
+          grid = FALSE, 
+          force_edges = TRUE,
+          choices = c('More certain (0.05)', '0.10', '0.15', '0.20', '0.25', '0.30', '0.35', '0.40', 'Less certain (0.45)'), 
+          width = '600px'
         )
 
       ),
@@ -160,8 +170,8 @@ shinyUI(fluidPage(
       # map output
       column(width = 6,
              
-             leafletOutput('map_exp', width = '100%', height = 550), 
-             h3()
+        leafletOutput('map_exp', width = '100%', height = 550), 
+        h3()
 
       ) 
 
@@ -169,31 +179,34 @@ shinyUI(fluidPage(
     
     tabPanel('Plot',
       
-      h5('This plot shows the CSCI score expectations for every stream reach with CSCI sampling stations.  The CSCI threshold and expectation tails define the reach expectation and the CSCI performance for the sampling stations.  Toggle the sliders to see how these change on the plot, including the maps and table in the other tabs.  The model and type selectors on the top will also change the plot.'),
+      h5('This plot shows the CSCI score expectations for every stream reach with CSCI sampling stations.  The CSCI threshold and confidence range define the reach expectation and the CSCI performance for the sampling stations.  Toggle the sliders to see how these change on the plot, including the maps and table in the other tabs.  The model and type selectors on the top will also change the plot.'),
              
-      column(width = 3,
+      column(width = 6,
              
         # select CSCI threshold       
         sliderInput('thrsh2', 
-                   label = h6("CSCI threshold:"), 
-                   min = 0, 
-                   max = 1.5,
-                   value = 0.79, 
-                   step = 0.01
+          label = h6("CSCI threshold:"), 
+          min = 0, 
+          max = 1.5,
+          value = 0.79, 
+          step = 0.01, 
+          width = '600px', 
+          ticks = FALSE
           )
         
       ),   
       
-      column(width = 3, 
+      column(width = 6, 
              
         # selected tails
-        sliderInput('tails2', 
-                   label = h6("Expectation tails:"), 
-                   min = 0.05, 
-                   max = 0.45,
-                   value = 0.05, 
-                   step = 0.05
-          )
+        sliderTextInput(
+          inputId = "tails2", 
+          label = h6("Confidence range (+/-):"),  
+          grid = FALSE, 
+          force_edges = TRUE,
+          choices = c('More certain (0.05)', '0.10', '0.15', '0.20', '0.25', '0.30', '0.35', '0.40', 'Less certain (0.45)'), 
+          width = '600px'
+        )
         
       ),
     
@@ -210,28 +223,31 @@ shinyUI(fluidPage(
 
       h5('This table summarizes the sampling station performance for CSCI scores shown in the map and plot in the other tabs. The "type" categories can be identified from the table. The model selector on the top will also change the table.'),
              
-      column(width = 3,
+      column(width = 6,
             
             # select CSCI threshold       
             sliderInput('thrsh3', 
-                        label = h6("CSCI threshold:"), 
-                        min = 0, 
-                        max = 1.5,
-                        value = 0.79, 
-                        step = 0.01
+              label = h6("CSCI threshold:"), 
+              min = 0, 
+              max = 1.5,
+              value = 0.79, 
+              step = 0.01, 
+              width = '600px', 
+              ticks = FALSE
             )
             
       ),   
       
-      column(width = 3, 
-            
+      column(width = 6, 
+          
             # selected tails
-            sliderInput('tails3', 
-                        label = h6("Expectation tails:"), 
-                        min = 0.05, 
-                        max = 0.45,
-                        value = 0.05, 
-                        step = 0.05
+            sliderTextInput(
+              inputId = "tails3", 
+              label = h6("Confidence range (+/-):"),  
+              grid = FALSE, 
+              force_edges = TRUE,
+              choices = c('More certain (0.05)', '0.10', '0.15', '0.20', '0.25', '0.30', '0.35', '0.40', 'Less certain (0.45)'), 
+              width = '600px'
             )
             
       ),
