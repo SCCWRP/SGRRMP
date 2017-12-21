@@ -16,7 +16,7 @@ load('data/scrs.RData')
 
 # color domain, csci scores and expectations
 dmn <- spat %>% 
-  select(matches('full|core')) %>% 
+  select(matches('full')) %>% 
   data.frame %>% 
   select(-geometry) %>% 
   gather('var', 'val') %>% 
@@ -25,7 +25,7 @@ dmn <- spat %>%
   range(na.rm = T)
 
 dmn_difr <- spat %>% 
-  select(matches('full|core')) %>% 
+  select(matches('full')) %>% 
   data.frame %>% 
   select(-geometry) %>% 
   gather('var', 'val') %>% 
@@ -57,13 +57,6 @@ pal_prf <- colorFactor(
   na.color = 'yellow',
   domain = c('expected', 'over performing', 'under performing'))
 
-# color palette for CSCI type
-pal_typ <- colorFactor(
-  palette = hue_pal()(100), 
-  na.color = 'yellow',
-  domain = paste0('Type', str_pad(seq(1:12), 2, pad = '0'))
-  )
-
 # server logic
 server <- function(input, output, session) {
   
@@ -71,12 +64,11 @@ server <- function(input, output, session) {
   dat <- reactive({
 
     ptile <- input$ptile 
-    modls <- input$modls
 
     # get polylines to plot
     ptile <- ptile %>% 
       format(nsmall = 2) %>% 
-      paste0(modls, .) %>% 
+      paste0('full', .) %>% 
       gsub('\\.', '.', .)
     names(spat)[names(spat) %in% ptile] <- 'lns'
     
@@ -89,7 +81,10 @@ server <- function(input, output, session) {
   # tails input as reactive, passed to multiple
   tlinp <- reactive({
     
-    tails <- input$tails %>% gsub('More certain|Less certain|\\(|\\)|\\s+', '', .) %>% as.numeric
+    tails <- input$tails %>% 
+      gsub('More certain|Less certain|\\(|\\)|\\s+', '', .) %>% 
+      as.numeric
+    tails <- 0.5 - tails
     return(tails)
     
   })
@@ -99,10 +94,9 @@ server <- function(input, output, session) {
     
     # inputs
     thrsh <- input$thrsh
-    modls <- input$modls
     
     # get biological condition expectations
-    cls <- getcls2(spat, thrsh = thrsh, tails = tlinp(), modls = modls)
+    cls <- getcls2(spat, thrsh = thrsh, tails = tlinp(), modls = 'full')
   
     # join with spatial data
     out <- spat %>% 
@@ -145,10 +139,9 @@ server <- function(input, output, session) {
     
     # inputs
     thrsh <- input$thrsh
-    modls <- input$modls
     
     # process
-    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tlinp(), modls = modls) %>% 
+    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tlinp(), modls = 'full') %>% 
       select(-lat, -long) 
     
     # assign csci station locations for jittr
@@ -295,35 +288,15 @@ server <- function(input, output, session) {
       ) %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste0(COMID, ', Stream class:', strcls)
+      ) %>% 
+      addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
+                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf),
+                       fillColor = ~pal_prf(perf), color = 'black'
+      ) %>% 
+      addLegend("topright", pal = pal_prf, values = scr_exp$perf,
+                title = "CSCI performance",
+                opacity = 1
       )
-      
-    # conditions expections as site performance
-    if(typs == 'perf'){
-      
-      exp_bs <- exp_bs %>% 
-        addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
-                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf),
-                         fillColor = ~pal_prf(perf), color = 'black'
-        ) %>% 
-        addLegend("topright", pal = pal_prf, values = scr_exp$perf,
-                  title = "CSCI performance",
-                  opacity = 1
-        )
-  
-    # condition expectations as site types    
-    } else {
-      
-      exp_bs <- exp_bs %>% 
-        addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 0.9, 
-                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', typelv),
-                         fillColor = ~pal_typ(typelv), color = 'black'
-        ) %>% 
-        addLegend("topright", pal = pal_typ, values = scr_exp$typelv,
-                  title = "CSCI score type",
-                  opacity = 1
-        )
-      
-    }
   
   # sync the maps
   combineWidgets(exp, exp_bs)
@@ -334,7 +307,6 @@ server <- function(input, output, session) {
   output$plo_exp <- renderPlot({
 
     thrsh <- input$thrsh
-    typs <- input$typs
     bysta <- input$bysta
     
     # CSCI scores and expectations
@@ -358,11 +330,19 @@ server <- function(input, output, session) {
       
       toplo1 <- toplo1 %>% 
         mutate(StationCode = as.character(StationCode)) %>% 
-        arrange(StationCode)
+        arrange(StationCode)%>% 
+        mutate(
+          StationCode = factor(StationCode),
+          StationCode = factor(StationCode, levels = rev(levels(StationCode)))
+        )
       
       toplo2 <- toplo2 %>% 
         mutate(StationCode = as.character(StationCode)) %>% 
-        arrange(StationCode)
+        arrange(StationCode) %>% 
+        mutate(
+          StationCode = factor(StationCode),
+          StationCode = factor(StationCode, levels = rev(levels(StationCode)))
+        )
       
     }
     
@@ -376,26 +356,11 @@ server <- function(input, output, session) {
       ) +
       scale_x_continuous('CSCI') +
       scale_y_discrete('Site') +
-      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`)))
-    
-    # CSCI points by performance  
-    if(typs == 'perf'){
-      
-      p <- p +
-        geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
-        geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
-        scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
-    
-    # CSCI points by type
-    } else {
-      
-      p <- p +
-        geom_point(aes(x = csci, fill = Type), shape = 21, size = 4, alpha = 0.4) +
-        geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
-        scale_fill_manual(values = pal_typ(levels(toplo1$Type)), na.value = 'yellow')
+      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
+      geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
+      geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
+      scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
 
-    }
-    
     print(p)
     
   })

@@ -360,12 +360,13 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely co
       ) %>% 
     arrange(`typelv`) %>%
     rename(
-      `Biological expectation` = strcls,
-      `Performance` = perf,
+      `Reach expectation` = strcls,
+      `Site performance` = perf,
       `Observed score` = typeoc,
       Type = typelv
     ) %>%
-    mutate(Type = gsub('^Type|^Type0', '', Type))
+    mutate(Type = gsub('^Type|^Type0', '', Type)) %>% 
+    dplyr::select(`Reach expectation`, `Site performance`, `Observed score`, Type, Sites)
   
   return(totab)
 
