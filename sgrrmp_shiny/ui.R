@@ -181,7 +181,7 @@ shinyUI(fluidPage(
       
       h5('This plot shows the CSCI score expectations for every stream reach with CSCI sampling stations.  The CSCI threshold and confidence range define the reach expectation and the CSCI performance for the sampling stations.  Toggle the sliders to see how these change on the plot, including the maps and table in the other tabs.  The model and type selectors on the top will also change the plot.'),
              
-      column(width = 6,
+      column(width = 4,
              
         # select CSCI threshold       
         sliderInput('thrsh2', 
@@ -190,13 +190,13 @@ shinyUI(fluidPage(
           max = 1.5,
           value = 0.79, 
           step = 0.01, 
-          width = '600px', 
+          width = '400px', 
           ticks = FALSE
           )
         
       ),   
       
-      column(width = 6, 
+      column(width = 4, 
              
         # selected tails
         sliderTextInput(
@@ -205,9 +205,20 @@ shinyUI(fluidPage(
           grid = FALSE, 
           force_edges = TRUE,
           choices = c('More certain (0.05)', '0.10', '0.15', '0.20', '0.25', '0.30', '0.35', '0.40', 'Less certain (0.45)'), 
-          width = '600px'
+          width = '400px'
         )
         
+      ),
+        
+      column(width = 4, 
+             
+        # order by site
+        materialSwitch('bysta', 
+                       label = h6('Order by site:'), 
+                       status = 'primary',
+                       right = F
+        )
+
       ),
     
       # plot output

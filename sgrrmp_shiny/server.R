@@ -335,6 +335,7 @@ server <- function(input, output, session) {
 
     thrsh <- input$thrsh
     typs <- input$typs
+    bysta <- input$bysta
     
     # CSCI scores and expectations
     toplo1 <- scr_exp() %>% 
@@ -345,12 +346,25 @@ server <- function(input, output, session) {
         `Relative\nperformance` = perf,
         Type = typelv
         )
-    
+
     # total expected range
     toplo2 <- scr_exp() %>% 
       select(COMID, StationCode, data, strcls) %>% 
       unnest %>% 
       rename(`Stream Class` = strcls)
+
+    # arrange by station if true
+    if(bysta){
+      
+      toplo1 <- toplo1 %>% 
+        mutate(StationCode = as.character(StationCode)) %>% 
+        arrange(StationCode)
+      
+      toplo2 <- toplo2 %>% 
+        mutate(StationCode = as.character(StationCode)) %>% 
+        arrange(StationCode)
+      
+    }
     
     # plot
     p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
@@ -361,6 +375,7 @@ server <- function(input, output, session) {
         axis.text.y = element_text(size = 10)
       ) +
       scale_x_continuous('CSCI') +
+      scale_y_discrete('Site') +
       scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`)))
     
     # CSCI points by performance  
