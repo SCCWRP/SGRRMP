@@ -1,14 +1,16 @@
 library(leaflet)
 library(shinyjs)
 library(shinyBS)
-library(shinyWidgets)
+library(shinyCustom)
 library(shinydashboard)
+library(shinyWidgets)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   
   theme = 'styles.css',
   useShinyjs(),
+  useShinyCustom(slider_delay = '1500'),
   
   # Application title
   h1('Stream classification in the San Gabriel River Watershed', 
@@ -20,7 +22,7 @@ shinyUI(fluidPage(
     column(width = 3, img(src = "logo.jpg", width = '200px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 9, 
-      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained.')
+      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', Sys.time())
     ),
 
     column(width = 12, 
@@ -41,7 +43,7 @@ shinyUI(fluidPage(
         
         # select point radius
         column(width = 4,
-              sliderInput("pt_sz", 
+              customSliderInput("pt_sz", 
                           label = h6("Point size:"), 
                           min = 0, 
                           max = 15,
@@ -54,7 +56,7 @@ shinyUI(fluidPage(
         
         # select line size
         column(width = 4,
-              sliderInput("ln_sz", 
+              customSliderInput("ln_sz", 
                           label = h6("Line size:"), 
                           min = 0, 
                           max = 5,
@@ -67,7 +69,7 @@ shinyUI(fluidPage(
         
         column(width = 4,
                
-               sliderInput('jitr', 
+               customSliderInput('jitr', 
                            label = h6("Jitter overlaps:"), 
                            min = 0, 
                            max = 500,
@@ -86,7 +88,7 @@ shinyUI(fluidPage(
         h5('These controls change the attributes in the',  strong('left map'), '. The first slider controls which percentile of predicted CSCI scores is shown for the stream reaches.  The toggle switch controls the observed CSCI scores shown at each sampling station.  The scores from field samples are shown when the switch is off and the differences between the observed scores and the reach predictions are shown when the switch is on.'),      
          
         # which csci percentile to show
-        sliderInput('ptile',
+        customSliderInput('ptile',
           label = h6("Reach estimated score (percentile):"),
           min = 0.05,
           max = 0.95,
@@ -110,7 +112,7 @@ shinyUI(fluidPage(
         h5('These controls change the attributes in the',  strong('right map'), '. The first slider controls the CSCI threshold and the second slider controls the certainty range of the predicted CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a sampling station. See the plot tab for more.'),      
              
         # select CSCI threshold, master       
-        sliderInput('thrsh', 
+        customSliderInput('thrsh', 
            label = h6("CSCI threshold:"), 
            min = 0, 
            max = 1.5,
@@ -157,7 +159,7 @@ shinyUI(fluidPage(
       column(width = 4,
              
         # select CSCI threshold       
-        sliderInput('thrsh2', 
+        customSliderInput('thrsh2', 
           label = h6("CSCI threshold:"), 
           min = 0, 
           max = 1.5,
@@ -210,7 +212,7 @@ shinyUI(fluidPage(
       column(width = 6,
             
             # select CSCI threshold       
-            sliderInput('thrsh3', 
+            customSliderInput('thrsh3', 
               label = h6("CSCI threshold:"), 
               min = 0, 
               max = 1.5,
