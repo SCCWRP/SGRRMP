@@ -15,7 +15,7 @@ library(tidyverse)
 #                     stringsAsFactors = F)
 # save(all_cid, file = 'C:/Users/Marcus.SCCWRP2K/Desktop/all_cid.RData', compress = 'xz')
 
-load(file = 'P:/R  aphaelMazor/SGRRMP/Revision_120117/all_cid.RData')
+load(file = 'P:/RaphaelMazor/SGRRMP/Revision_120117/all_cid.RData')
 
 # comids not in all_cid
 spat <- nhd.sgr %>% 
