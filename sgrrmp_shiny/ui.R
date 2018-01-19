@@ -91,18 +91,7 @@ shinyUI(fluidPage(
          
       column(width = 6, 
         
-        h5('These controls change the attributes in the',  strong('left map'), '. The first slider controls which percentile of predicted CSCI scores is shown for the stream reaches.  The toggle switch controls the observed CSCI scores shown at each sampling station.  The scores from field samples are shown when the switch is off and the differences between the observed scores and the reach predictions are shown when the switch is on.'),      
-         
-        # which csci percentile to show
-        customSliderInput('ptile',
-          label = h6("Reach estimated score (percentile):"),
-          min = 0.05,
-          max = 0.95,
-          value = 0.5,
-          step = 0.05, 
-          width = '600px', 
-          ticks = FALSE
-        ),
+        h5('The toggle switch for the', strong('left map'), 'controls how the CSCI scores at the stations (points) are displayed.  The observed scores from field samples are shown when the switch is off and the differences between the observed scores and the stream reach predictions are shown when the switch is on.'),      
 
         # show csci differences   
         materialSwitch('difr', 
@@ -119,15 +108,15 @@ shinyUI(fluidPage(
              
         # select CSCI threshold, master
         sliderTextInput(
-          inputId = "thrsh", 
-          label = h6("CSCI reference threshold:"),  
-          grid = FALSE, 
+          inputId = "thrsh",
+          label = h6("CSCI reference threshold:"),
+          grid = FALSE,
           force_edges = TRUE,
           selected = '10% (0.79)',
-          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'), 
+          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
           width = '600px'
         ),
-      
+
         # selected tails, master
         sliderTextInput(
           inputId = "tails", 

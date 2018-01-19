@@ -63,16 +63,10 @@ server <- function(input, output, session) {
   # data to plot, polylines with score expections
   dat <- reactive({
 
-    ptile <- input$ptile 
-
-    # get polylines to plot
-    ptile <- ptile %>% 
-      format(nsmall = 2) %>% 
-      paste0('full', .) %>% 
-      gsub('\\.', '.', .)
-    names(spat)[names(spat) %in% ptile] <- 'lns'
+    # change percentile column name
+    names(spat)[names(spat) %in% 'full0.50'] <- 'lns'
     
-    # set zero values to NA
+    # output
     out <- spat 
     out
     
@@ -252,7 +246,7 @@ server <- function(input, output, session) {
                    label = ~paste0(COMID, ', Likely score:', as.character(round(lns, 2)))
       ) %>% 
       addLegend("topright", pal = pal, values = ~lns,
-                title = "Likely score",
+                title = "Reach prediction (lines)",
                 opacity = 1
       )
     
@@ -275,6 +269,10 @@ server <- function(input, output, session) {
         addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
                          fillColor = ~pal(csci), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal, values = csci()$csci,
+                  title = "CSCI score (points)",
+                  opacity = 1
         )
       
     }
@@ -285,7 +283,7 @@ server <- function(input, output, session) {
       clearShapes() %>% 
       clearControls()%>% 
       addLegend("topright", pal = pal_exp, values = ~strcls,
-                title = "Expected classification",
+                title = "Expected classification (lines)",
                 opacity = 1
       ) %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
@@ -296,7 +294,7 @@ server <- function(input, output, session) {
                        fillColor = ~pal_prf(perf), color = 'black'
       ) %>% 
       addLegend("topright", pal = pal_prf, values = scr_exp$perf,
-                title = "CSCI performance",
+                title = "CSCI performance (points)",
                 opacity = 1
       )
   
