@@ -130,15 +130,20 @@ server <- function(input, output, session) {
     
     # process
     incl <- site_exp(spat, scrs, thrsh = thrsh(), tails = tlinp(), modls = 'full') %>% 
-      select(-lat, -long) 
+      select(-lat, -long) %>% 
+      group_by(StationCode) %>% 
+      nest
     
     # assign csci station locations for jittr
-    incl <- csci() %>% 
+    out <- csci() %>% 
       select(StationCode, lat, long) %>% 
+      group_by(StationCode) %>% 
+      nest %>% 
       mutate(StationCode = factor(StationCode, levels = levels(incl$StationCode))) %>% 
-      left_join(incl, ., by = 'StationCode')
+      left_join(incl, ., by = 'StationCode') %>% 
+      unnest
 
-    return(incl)
+    return(out)
     
   })
 
@@ -271,7 +276,7 @@ server <- function(input, output, session) {
                          fillColor = ~pal(csci), color = 'black'
         ) %>% 
         addLegend("topright", pal = pal, values = csci()$csci,
-                  title = "CSCI score (points)",
+                  title = "CSCI observed (points)",
                   opacity = 1
         )
       
