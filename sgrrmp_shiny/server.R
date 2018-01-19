@@ -53,9 +53,16 @@ pal_exp <- colorFactor(
 
 # color palette for CSCI performance
 pal_prf <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Greys')[c(1, 7, 4)],#c('white', 'blue', 'red'),
+  palette = c(
+    RColorBrewer::brewer.pal(9, 'Blues')[c(1, 7, 4)],
+    RColorBrewer::brewer.pal(9, 'Greens')[c(1, 7, 4)],
+    RColorBrewer::brewer.pal(9, 'Reds')[c(1, 7, 4)]
+    ),
   na.color = 'yellow',
-  domain = c('expected', 'over performing', 'under performing'))
+  domain = c('expected (lc)', 'over performing  (lc)', 'under performing (lc)', 
+             'expected (u)', 'over performing (u)', 'under performing (u)',
+             'expected (lu)', 'over performing (lu)', 'under performing (lu)')
+)
 
 # server logic
 server <- function(input, output, session) {
@@ -142,7 +149,10 @@ server <- function(input, output, session) {
       mutate(StationCode = factor(StationCode, levels = levels(incl$StationCode))) %>% 
       left_join(incl, ., by = 'StationCode') %>% 
       unnest
-
+    
+    # add additional perf column for multicolor by strcls (pal_prf)
+    out <- get_perf_mlt(out)
+    
     return(out)
     
   })
@@ -296,9 +306,9 @@ server <- function(input, output, session) {
       ) %>% 
       addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
                        label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf),
-                       fillColor = ~pal_prf(perf), color = 'black'
+                       fillColor = ~pal_prf(perf_mlt), color = 'black'
       ) %>% 
-      addLegend("topright", pal = pal_prf, values = scr_exp$perf,
+      addLegend("topright", pal = pal_prf, values = scr_exp$perf_mlt,
                 title = "CSCI performance (points)",
                 opacity = 1
       )
@@ -315,11 +325,11 @@ server <- function(input, output, session) {
     
     # CSCI scores and expectations
     toplo1 <- scr_exp() %>% 
-      select(COMID, StationCode, datcut, strcls, csci, perf, typelv) %>% 
+      select(COMID, StationCode, datcut, strcls, csci, perf, typelv, perf_mlt) %>% 
       unnest %>% 
       rename(
         `Stream Class` = strcls,
-        `Relative\nperformance` = perf,
+        `Relative\nperformance` = perf_mlt,
         Type = typelv
         )
 

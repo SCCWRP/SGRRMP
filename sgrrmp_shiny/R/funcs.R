@@ -371,3 +371,44 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely co
   return(totab)
 
 }
+
+#' Get performance multi classifications
+#' Input is scr_exp() reactive from app
+get_perf_mlt <- function(scr_exp, lbs = c('expected (lc)', 'over performing  (lc)', 'under performing (lc)', 
+                                            'expected (u)', 'over performing (u)', 'under performing (u)',
+                                            'expected (lu)', 'over performing (lu)', 'under performing (lu)')
+                         ){
+  
+  # format perf_mlt as column combos of perf and strcls
+  out <- scr_exp %>% 
+    mutate(
+      torm = map(strcls, function(chr){
+        
+        if(!is.na(chr)){
+          as.character(chr) %>% 
+            strsplit(., ' ') %>% 
+            lapply(function(x) substr(x, 1, 1) %>% paste(collapse = '') %>% paste0('(', ., ')')) %>% 
+            .[[1]]
+        } else {
+          NA
+        }
+        
+      }),
+      torm = unlist(torm)
+    ) %>% 
+    unite('perf_mlt', perf, torm, sep = ' ', remove = F) %>% 
+    mutate(perf_mlt = ifelse(grepl('NA', perf_mlt), NA, perf_mlt))
+  
+  # subset lbs by those in interval
+  lbs <- unique(out$perf_mlt) %>% 
+    na.omit %>% 
+    match(lbs) %>% 
+    lbs[.]
+  
+  # reassign factor levels
+  out <- out %>% 
+    mutate(perf_mlt = factor(perf_mlt, levels = lbs))
+  
+  return(out)
+  
+}
