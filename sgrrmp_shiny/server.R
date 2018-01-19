@@ -92,11 +92,8 @@ server <- function(input, output, session) {
   # data to plot, polylines with condition expectations
   dat_exp <- reactive({
     
-    # inputs
-    thrsh <- input$thrsh
-    
     # get biological condition expectations
-    cls <- getcls2(spat, thrsh = thrsh, tails = tlinp(), modls = 'full')
+    cls <- getcls2(spat, thrsh = thrsh(), tails = tlinp(), modls = 'full')
   
     # join with spatial data
     out <- spat %>% 
@@ -137,11 +134,8 @@ server <- function(input, output, session) {
   # CSCI scores and stream condition expectations
   scr_exp <- reactive({
     
-    # inputs
-    thrsh <- input$thrsh
-    
     # process
-    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tlinp(), modls = 'full') %>% 
+    incl <- site_exp(spat, scrs, thrsh = thrsh(), tails = tlinp(), modls = 'full') %>% 
       select(-lat, -long) 
     
     # assign csci station locations for jittr
@@ -154,6 +148,15 @@ server <- function(input, output, session) {
     
   })
 
+  # CSCI thresold reactive input
+  thrsh <- reactive({
+    
+    input$thrsh %>%
+      gsub('^.*\\(|\\)$', '', .) %>% 
+      as.numeric
+    
+  })
+  
   # non-reactive base map
   output$map <- renderLeaflet(
 
@@ -182,22 +185,22 @@ server <- function(input, output, session) {
   # thrsh
   observe({
     if (trs != input$thrsh){
-      updateSliderInput(session, "thrsh2", NULL, input$thrsh)
-      updateSliderInput(session, "thrsh3", NULL, input$thrsh)
+      updateSliderTextInput(session, "thrsh2", selected = input$thrsh)
+      updateSliderTextInput(session, "thrsh3", selected = input$thrsh)
       trs <<- input$thrsh
     }
   })
   observe({
     if (trs != input$thrsh2){
-      updateSliderInput(session, "thrsh", value = input$thrsh2)
-      updateSliderInput(session, "thrsh3", value = input$thrsh2)
+      updateSliderTextInput(session, "thrsh", selected = input$thrsh2)
+      updateSliderTextInput(session, "thrsh3", selected = input$thrsh2)
       trs <<- input$thrsh2
     }
   })
   observe({
     if (trs != input$thrsh3){
-      updateSliderInput(session, "thrsh", value = input$thrsh3)
-      updateSliderInput(session, "thrsh2", value = input$thrsh3)
+      updateSliderTextInput(session, "thrsh", selected = input$thrsh3)
+      updateSliderTextInput(session, "thrsh2", selected = input$thrsh3)
       trs <<- input$thrsh3
     }
   })
@@ -253,7 +256,6 @@ server <- function(input, output, session) {
                 opacity = 1
       )
     
-    
     # csci scores if false, otherwise differences
     if(difr){
 
@@ -306,7 +308,6 @@ server <- function(input, output, session) {
   # plot of csci scores and expectations by station code
   output$plo_exp <- renderPlot({
 
-    thrsh <- input$thrsh
     bysta <- input$bysta
     
     # CSCI scores and expectations
@@ -358,7 +359,7 @@ server <- function(input, output, session) {
       scale_y_discrete('Site') +
       scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
       geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
-      geom_vline(xintercept = thrsh, linetype = 'dashed', size = 1) +
+      geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
       scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
 
     print(p)
@@ -368,10 +369,8 @@ server <- function(input, output, session) {
   # summary tables
   output$tab_sum <- DT::renderDataTable({
     
-    thrsh <- input$thrsh
-    
     # summary table by csci type          
-    totab <- get_tab(scr_exp(), thrsh = thrsh, tails = tlinp())
+    totab <- get_tab(scr_exp(), thrsh = thrsh(), tails = tlinp())
       
     return(totab)
       

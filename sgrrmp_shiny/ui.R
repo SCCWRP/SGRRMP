@@ -4,7 +4,13 @@ library(shinyBS)
 library(shinyCustom)
 library(shinydashboard)
 library(shinyWidgets)
+library(tidyverse)
 
+raw <- system('git log -1', intern = TRUE) %>% 
+  .[grep('^Date', .)] %>% 
+  gsub('\\s+', ' ', .) %>% 
+  gsub('Date: ', '', .)
+  
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   
@@ -22,7 +28,7 @@ shinyUI(fluidPage(
     column(width = 3, img(src = "logo.jpg", width = '200px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 9, 
-      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', Sys.time())
+      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', raw)
     ),
 
     column(width = 12, 
@@ -111,15 +117,15 @@ shinyUI(fluidPage(
           
         h5('These controls change the attributes in the',  strong('right map'), '. The first slider controls the CSCI threshold and the second slider controls the certainty range of the predicted CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a sampling station. See the plot tab for more.'),      
              
-        # select CSCI threshold, master       
-        customSliderInput('thrsh', 
-           label = h6("CSCI threshold:"), 
-           min = 0, 
-           max = 1.5,
-           value = 0.79, 
-           step = 0.01,
-           width = '600px', 
-           ticks = FALSE
+        # select CSCI threshold, master
+        sliderTextInput(
+          inputId = "thrsh", 
+          label = h6("CSCI reference threshold:"),  
+          grid = FALSE, 
+          force_edges = TRUE,
+          selected = '10% (0.79)',
+          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'), 
+          width = '600px'
         ),
       
         # selected tails, master
@@ -158,16 +164,16 @@ shinyUI(fluidPage(
              
       column(width = 4,
              
-        # select CSCI threshold       
-        customSliderInput('thrsh2', 
-          label = h6("CSCI threshold:"), 
-          min = 0, 
-          max = 1.5,
-          value = 0.79, 
-          step = 0.01, 
-          width = '400px', 
-          ticks = FALSE
-          )
+        # select CSCI threshold
+        sliderTextInput(
+          inputId = "thrsh2", 
+          label = h6("CSCI reference threshold:"),  
+          grid = FALSE, 
+          force_edges = TRUE,
+          selected = '10% (0.79)',
+          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'), 
+          width = '600px'
+        )
         
       ),   
       
@@ -211,17 +217,17 @@ shinyUI(fluidPage(
              
       column(width = 6,
             
-            # select CSCI threshold       
-            customSliderInput('thrsh3', 
-              label = h6("CSCI threshold:"), 
-              min = 0, 
-              max = 1.5,
-              value = 0.79, 
-              step = 0.01, 
-              width = '600px', 
-              ticks = FALSE
+            # select CSCI threshold
+            sliderTextInput(
+             inputId = "thrsh3", 
+             label = h6("CSCI reference threshold:"),  
+             grid = FALSE, 
+             force_edges = TRUE,
+             selected = '10% (0.79)',
+             choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'), 
+             width = '600px'
             )
-            
+
       ),   
       
       column(width = 6, 
