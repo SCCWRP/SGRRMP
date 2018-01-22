@@ -7,7 +7,7 @@
 #' @param lbs chr string labels for interval classifications
 #' 
 #' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
-getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full'), lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
+getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2)){
   
   # sanity check
   if(tails >= 0.5)
@@ -77,7 +77,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
     as.numeric %>% 
     match(unlist(lbs)) %>% 
     lbs[.]
-  
+
   # strcls as correct factor levels
   dat <- dat %>%
     mutate(strcls = factor(strcls_int, levels = unlist(lbs), labels = names(lbs)))
@@ -95,7 +95,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
 #' @param lbs chr string labels for interval classifications
 #' 
 #' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
-getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full'), lbs = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0)){
+getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2)){
 
   # sanity check
   if(tails >= 0.5)
@@ -151,7 +151,8 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
     na.omit %>% 
     as.numeric %>% 
     match(unlist(lbs)) %>% 
-    lbs[.]
+    lbs[.] %>% 
+    .[names(sort(unlist(.)))]
   
   # strcls as correct factor levels
   dat <- dat %>%
@@ -223,7 +224,8 @@ site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over p
     na.omit %>% 
     as.numeric %>% 
     match(unlist(lbs)) %>% 
-    lbs[.]
+    lbs[.] %>% 
+    .[names(sort(unlist(.)))]
   
   # perf as correct factor levels
   incl <- incl %>%
@@ -320,7 +322,7 @@ typ_lbs <- function(vec = NULL, thrsh = 0.79, tails = 0.05, obs_sc = FALSE, get_
 #' @param obs_sc logical if observed score text qualifiers are returned
 #' @param lbs_str chr string labels for stream comid expectation as likely constrained, undetermind, and likely unconstrained
 #' @param lbs_sta chr string labels for site/station performance as over, expected, or under performing
-get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely constrained' = 2, 'undetermined' = 1, 'likely unconstrained' = 0), lbs_sta = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){ 
+get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2), lbs_sta = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){ 
 
   # typeoc labels
   typeoc <- typ_lbs(get_cds = T) %>% 
@@ -374,9 +376,9 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely co
 
 #' Get performance multi classifications
 #' Input is scr_exp() reactive from app
-get_perf_mlt <- function(scr_exp, lbs = c('over performing (lc)', 'expected (lc)', 'under performing (lc)', 
+get_perf_mlt <- function(scr_exp, lbs = c('over performing (lu)', 'expected (lu)', 'under performing (lu)',
                                           'over performing (u)', 'expected (u)', 'under performing (u)',
-                                          'over performing (lu)', 'expected (lu)', 'under performing (lu)')
+                                          'over performing (lc)', 'expected (lc)', 'under performing (lc)')
                          ){
   
   # format perf_mlt as column combos of perf and strcls

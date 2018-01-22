@@ -47,22 +47,23 @@ pal_difr <- colorNumeric(
 
 # color palette for stream expectations
 pal_exp <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(1, 3, 2)],
+  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(2, 3, 1)],
   na.color = 'yellow',
-  levels = c('likely constrained', 'undetermined', 'likely unconstrained'))
+  levels = c('likely unconstrained', 'undetermined', 'likely constrained'))
 
 # color palette for CSCI performance
 pal_prf <- colorFactor(
   palette = c(
-    RColorBrewer::brewer.pal(9, 'Reds')[c(9, 6, 3)],
+    RColorBrewer::brewer.pal(9, 'Blues')[c(9, 6, 3)],
     RColorBrewer::brewer.pal(9, 'Greens')[c(9, 6, 3)],
-    RColorBrewer::brewer.pal(9, 'Blues')[c(9, 6, 3)]
+    RColorBrewer::brewer.pal(9, 'Reds')[c(9, 6, 3)]
     ),
   na.color = 'yellow',
-  levels = c('over performing (lc)', 'expected (lc)', 'under performing (lc)', 
-             'over performing (u)', 'expected (u)','under performing (u)',
-             'over performing (lu)', 'expected (lu)', 'under performing (lu)')
-)
+  levels = c(
+    'over performing (lu)', 'expected (lu)', 'under performing (lu)',
+    'over performing (u)', 'expected (u)','under performing (u)',  
+    'over performing (lc)', 'expected (lc)', 'under performing (lc)')
+  )
 
 # server logic
 server <- function(input, output, session) {
@@ -95,7 +96,7 @@ server <- function(input, output, session) {
     
     # get biological condition expectations
     cls <- getcls2(spat, thrsh = thrsh(), tails = tlinp(), modls = 'full')
-  
+
     # join with spatial data
     out <- spat %>% 
       left_join(cls, by = 'COMID')
@@ -106,37 +107,47 @@ server <- function(input, output, session) {
   
   # CSCI scores, take difference from expectation if difr is true
   csci <- reactive({
-  
-    difr <- input$difr
+
     jitr <- input$jitr
 
-    out <- scrs
-    if(difr){
+    # get csci difference
+    out <- dat() %>% 
+      select(COMID, lns) %>% 
+      mutate(COMID = as.character(COMID)) %>% 
+      left_join(scrs, ., by = 'COMID') %>% 
+      mutate(csci_difr = csci - lns)
+  
+    # jitter scores with overlapping lat/lon
+    if(jitr != 0){
+    
+      out <- out %>% 
+        mutate(
+          lat = ifelse(duplicated(lat), jitter(lat, factor = jitr), lat),
+          long = ifelse(duplicated(long), jitter(long, factor = jitr), long)
+        )
+
+    # take average csci is jitter is zero
+    } else {
       
-      out <- dat() %>% 
-        select(COMID, lns) %>% 
-        mutate(COMID = as.character(COMID)) %>% 
-        left_join(scrs, ., by = 'COMID') %>% 
-        mutate(csci = csci - lns)
-      
+      out <- out %>% 
+        group_by(COMID, StationCode, lat, long) %>% 
+        summarise(
+          csci = mean(csci, na.rm = TRUE), 
+          csci_difr = mean(csci_difr, na.rm = TRUE)
+          ) %>% 
+        ungroup
+        
     }
     
-    # jitter scores with overlapping lat/lon
-    out <- out %>% 
-      mutate(
-        lat = ifelse(duplicated(lat), jitter(lat, factor = jitr), lat),
-        long = ifelse(duplicated(long), jitter(long, factor = jitr), long)
-      )
-
     return(out)
       
   })
   
-  # CSCI scores and stream condition expectations
-  scr_exp <- reactive({
-    
+  # CSCI scores and stream condition expectations, maps only 
+  scr_exp_map <- reactive({
+
     # process
-    incl <- site_exp(spat, scrs, thrsh = thrsh(), tails = tlinp(), modls = 'full') %>% 
+    incl <- site_exp(spat, csci(), thrsh = thrsh(), tails = tlinp(), modls = 'full') %>% 
       select(-lat, -long) %>% 
       group_by(StationCode) %>% 
       nest
@@ -157,6 +168,20 @@ server <- function(input, output, session) {
     
   })
 
+  # CSCI scores and stream condition expectations, not on maps
+  # these data are never averaged by station averaged for CSCI
+  scr_exp <- reactive({
+    
+    # process
+    incl <- site_exp(spat, scrs, thrsh = thrsh(), tails = tlinp(), modls = 'full')
+    
+    # add additional perf column for multicolor by strcls (pal_prf)
+    out <- get_perf_mlt(incl)
+    
+    return(out)
+    
+  })
+  
   # CSCI thresold reactive input
   thrsh <- reactive({
     
@@ -165,26 +190,6 @@ server <- function(input, output, session) {
       as.numeric
     
   })
-  
-  # non-reactive base map
-  output$map <- renderLeaflet(
-
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron) %>% 
-      syncWith('maps')
-    
-  )
-  
-  # non-reactive base map, condition expectations
-  output$map_exp <- renderLeaflet(
-    
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron) %>% 
-      syncWith('maps')
-
-  )
   
   ##
   # these update inputs that are duplicated across tabs
@@ -237,6 +242,26 @@ server <- function(input, output, session) {
     }
   })
   
+  # non-reactive base map
+  output$map <- renderLeaflet(
+    
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
+      addProviderTiles(providers$CartoDB.Positron) %>% 
+      syncWith('maps')
+    
+  )
+  
+  # non-reactive base map, condition expectations
+  output$map_exp <- renderLeaflet(
+    
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
+      addProviderTiles(providers$CartoDB.Positron) %>% 
+      syncWith('maps')
+    
+  )
+  
   ##
   # reactive maps
   observe({
@@ -250,7 +275,7 @@ server <- function(input, output, session) {
     # reactives
     dat <- dat()
     dat_exp <- dat_exp()
-    scr_exp <- scr_exp()
+    scr_exp_map <- scr_exp_map()
     
     # score expectations
     exp <- leafletProxy("map", data = dat) %>%
@@ -270,10 +295,10 @@ server <- function(input, output, session) {
 
       exp <- exp %>% 
         addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
-                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
-                         fillColor = ~pal_difr(csci), color = 'black'
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci_difr, 2))),
+                         fillColor = ~pal_difr(csci_difr), color = 'black'
         ) %>% 
-        addLegend("topright", pal = pal_difr, values = csci()$csci,
+        addLegend("topright", pal = pal_difr, values = csci()$csci_difr,
                   title = "CSCI difference",
                   opacity = 1
         )
@@ -304,11 +329,11 @@ server <- function(input, output, session) {
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste0(COMID, ', Stream class:', strcls)
       ) %>% 
-      addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
+      addCircleMarkers(data = scr_exp_map, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
                        label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt),
                        fillColor = ~pal_prf(perf_mlt), color = 'black'
       ) %>% 
-      addLegend("topright", pal = pal_prf, values = scr_exp$perf_mlt,
+      addLegend("topright", pal = pal_prf, values = scr_exp_map$perf_mlt,
                 title = "CSCI performance (points)",
                 opacity = 1
       )
@@ -327,6 +352,7 @@ server <- function(input, output, session) {
     toplo1 <- scr_exp() %>% 
       select(COMID, StationCode, datcut, strcls, csci, perf, typelv, perf_mlt) %>% 
       unnest %>% 
+      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
       rename(
         `Stream Class` = strcls,
         `Relative\nperformance` = perf_mlt,
@@ -337,6 +363,7 @@ server <- function(input, output, session) {
     toplo2 <- scr_exp() %>% 
       select(COMID, StationCode, data, strcls) %>% 
       unnest %>% 
+      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
       rename(`Stream Class` = strcls)
 
     # arrange by station if true

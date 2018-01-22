@@ -45,7 +45,7 @@ shinyUI(fluidPage(
 
       column(width = 12, 
              
-        h5('These sliders control the aesthetics in both maps. Use them to change the point/line sizes and apply a jitter for repeat visits as the same station.'), 
+        h5('These sliders control the aesthetics in both maps. Use them to change the point/line sizes and apply a jitter for repeat visits as the same station.  The average CSCI across all samples at a size is shown if jitter is set to zero.'), 
         
         # select point radius
         column(width = 4,
