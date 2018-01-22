@@ -5,12 +5,15 @@ library(shinyCustom)
 library(shinydashboard)
 library(shinyWidgets)
 library(tidyverse)
+library(rvest)
 
-raw <- system('git log -1', intern = TRUE) %>% 
-  .[grep('^Date', .)] %>% 
-  gsub('\\s+', ' ', .) %>% 
-  gsub('Date: ', '', .)
-  
+# last commit date
+dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>% 
+  html_nodes(".commit-group-title") %>% 
+  html_text %>% 
+  .[1] %>% 
+  gsub('^.*Commits on (.*)\\n.*$', '\\1', .)
+
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   
@@ -28,7 +31,7 @@ shinyUI(fluidPage(
     column(width = 3, img(src = "logo.jpg", width = '200px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 9, 
-      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', raw)
+      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', dt)
     ),
 
     column(width = 12, 
