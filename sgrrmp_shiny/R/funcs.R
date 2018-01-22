@@ -374,9 +374,9 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely co
 
 #' Get performance multi classifications
 #' Input is scr_exp() reactive from app
-get_perf_mlt <- function(scr_exp, lbs = c('expected (lc)', 'over performing  (lc)', 'under performing (lc)', 
-                                            'expected (u)', 'over performing (u)', 'under performing (u)',
-                                            'expected (lu)', 'over performing (lu)', 'under performing (lu)')
+get_perf_mlt <- function(scr_exp, lbs = c('over performing (lc)', 'expected (lc)', 'under performing (lc)', 
+                                          'over performing (u)', 'expected (u)', 'under performing (u)',
+                                          'over performing (lu)', 'expected (lu)', 'under performing (lu)')
                          ){
   
   # format perf_mlt as column combos of perf and strcls
@@ -397,17 +397,21 @@ get_perf_mlt <- function(scr_exp, lbs = c('expected (lc)', 'over performing  (lc
       torm = unlist(torm)
     ) %>% 
     unite('perf_mlt', perf, torm, sep = ' ', remove = F) %>% 
-    mutate(perf_mlt = ifelse(grepl('NA', perf_mlt), NA, perf_mlt))
+    mutate(perf_mlt = ifelse(grepl('^NA|NA$', perf_mlt), NA, perf_mlt))
   
-  # subset lbs by those in interval
-  lbs <- unique(out$perf_mlt) %>% 
+  # subset lbs by those in data
+  lbs2 <- unique(out$perf_mlt) %>% 
     na.omit %>% 
     match(lbs) %>% 
-    lbs[.]
+    lbs[.] 
+  
+  # get correct order
+  lbs <- lbs[lbs %in% lbs2]
+  lbs2 <- lbs2[match(lbs, lbs2)]
   
   # reassign factor levels
   out <- out %>% 
-    mutate(perf_mlt = factor(perf_mlt, levels = lbs))
+    mutate(perf_mlt = factor(perf_mlt, levels = lbs2))
   
   return(out)
   

@@ -47,21 +47,21 @@ pal_difr <- colorNumeric(
 
 # color palette for stream expectations
 pal_exp <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(1, 2, 3)],
+  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(1, 3, 2)],
   na.color = 'yellow',
-  domain = c('likely constrained', 'undetermined', 'likely unconstrained'))
+  levels = c('likely constrained', 'undetermined', 'likely unconstrained'))
 
 # color palette for CSCI performance
 pal_prf <- colorFactor(
   palette = c(
-    RColorBrewer::brewer.pal(9, 'Blues')[c(1, 7, 4)],
-    RColorBrewer::brewer.pal(9, 'Greens')[c(1, 7, 4)],
-    RColorBrewer::brewer.pal(9, 'Reds')[c(1, 7, 4)]
+    RColorBrewer::brewer.pal(9, 'Reds')[c(9, 6, 3)],
+    RColorBrewer::brewer.pal(9, 'Greens')[c(9, 6, 3)],
+    RColorBrewer::brewer.pal(9, 'Blues')[c(9, 6, 3)]
     ),
   na.color = 'yellow',
-  domain = c('expected (lc)', 'over performing  (lc)', 'under performing (lc)', 
-             'expected (u)', 'over performing (u)', 'under performing (u)',
-             'expected (lu)', 'over performing (lu)', 'under performing (lu)')
+  levels = c('over performing (lc)', 'expected (lc)', 'under performing (lc)', 
+             'over performing (u)', 'expected (u)','under performing (u)',
+             'over performing (lu)', 'expected (lu)', 'under performing (lu)')
 )
 
 # server logic
@@ -305,7 +305,7 @@ server <- function(input, output, session) {
                    label = ~paste0(COMID, ', Stream class:', strcls)
       ) %>% 
       addCircleMarkers(data = scr_exp, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
-                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf),
+                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt),
                        fillColor = ~pal_prf(perf_mlt), color = 'black'
       ) %>% 
       addLegend("topright", pal = pal_prf, values = scr_exp$perf_mlt,
@@ -371,7 +371,7 @@ server <- function(input, output, session) {
       scale_x_continuous('CSCI') +
       scale_y_discrete('Site') +
       scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
-      geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.4) +
+      geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.8) +
       geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
       scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
 
