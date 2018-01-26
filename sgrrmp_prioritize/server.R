@@ -55,7 +55,6 @@ pal_prf <- colorFactor(
     'over performing (lc)', 'expected (lc)', 'under performing (lc)')
   )
 
-
 # color palette for stream expectations
 pal_pri <- colorFactor(
   palette = RColorBrewer::brewer.pal(9, 'Greys')[c(8, 5, 2)],
@@ -69,8 +68,20 @@ server <- function(input, output, session) {
   plot_ex <- reactive({
   
     # output
-    out <- proc_all(exps_ex, scrs_ex, thrsh = 0.79, tails = 0.05)
+    out <- proc_all(exps_ex, scrs_ex, thrsh = thrsh, tails = tails)
 
+    out
+    
+  })
+  
+  # data to plot, polylines with score expections
+  dat <- reactive({
+    
+    # change percentile column name
+    names(spat)[names(spat) %in% 'full0.50'] <- 'lns'
+    
+    # output
+    out <- spat 
     out
     
   })
@@ -89,10 +100,87 @@ server <- function(input, output, session) {
     
   })
   
-  # site priorities
-  scr_pri <- reactive({
+  # CSCI scores, take difference from expectation if difr is true
+  csci <- reactive({
+    
+    jitr <- input$jitr
+    
+    # get csci difference
+    out <- dat() %>% 
+      select(COMID, lns) %>% 
+      mutate(COMID = as.character(COMID)) %>% 
+      left_join(scrs, ., by = 'COMID') %>% 
+      mutate(csci_difr = csci - lns)
+    
+    # jitter scores with overlapping lat/lon
+    if(jitr != 0){
+      
+      out <- out %>% 
+        mutate(
+          lat = ifelse(duplicated(lat), jitter(lat, factor = jitr), lat),
+          long = ifelse(duplicated(long), jitter(long, factor = jitr), long)
+        )
+      
+      # take average csci is jitter is zero
+    } else {
+      
+      out <- out %>% 
+        group_by(COMID, StationCode, lat, long) %>% 
+        summarise(
+          csci = mean(csci, na.rm = TRUE), 
+          csci_difr = mean(csci_difr, na.rm = TRUE)
+        ) %>% 
+        ungroup
+      
+    }
+    
+    return(out)
+    
+  })
   
-    # get plot example contstraints
+  # CSCI scores and stream condition expectations, maps only 
+  scr_exp_map <- reactive({
+    
+    # process
+    incl <- site_exp(spat, csci(), thrsh = thrsh, tails = tails, modls = 'full') %>% 
+      select(-lat, -long) %>% 
+      group_by(StationCode) %>% 
+      nest
+    
+    # assign csci station locations for jittr
+    out <- csci() %>% 
+      select(StationCode, lat, long) %>% 
+      group_by(StationCode) %>% 
+      nest %>% 
+      mutate(StationCode = factor(StationCode, levels = levels(incl$StationCode))) %>% 
+      left_join(incl, ., by = 'StationCode') %>% 
+      unnest
+    
+    # add additional perf column for multicolor by strcls (pal_prf)
+    out <- get_perf_mlt(out)
+    
+    return(out)
+    
+  })
+  
+  # CSCI scores and stream condition expectations, not on maps
+  # these data are never averaged by station averaged for CSCI
+  scr_exp <- reactive({
+    
+    # process
+    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tails, modls = 'full')
+    
+    # add additional perf column for multicolor by strcls (pal_prf)
+    out <- get_perf_mlt(incl)
+    
+    return(out)
+    
+  })
+  
+  # site priorities
+  scr_pri_tab <- reactive({
+
+    # get plot example constraints
     ex_jn <- plot_ex() %>% 
       select(Site, typelv)
     
@@ -104,6 +192,7 @@ server <- function(input, output, session) {
     site_pri <- isolate(reactiveValuesToList(input)) %>%
       enframe %>%
       filter(grepl('^Site', name)) %>%
+      mutate(value = map(value, ~ ifelse(is.null(.x), 'do nothing', .x))) %>% 
       unnest %>%
       rename(Site = name) %>%
       mutate(Site = factor(Site, levels = levels(ex_jn$Site))) %>%
@@ -111,16 +200,21 @@ server <- function(input, output, session) {
       mutate(typelv = as.character(typelv)) %>%
       select(-Site) %>%
       left_join(scr_exp_map, ., by = 'typelv') %>%
-      rename(Priority = value)
-    
-    # factor levels for prioritites
-    lbs <- c('Protect', 'Monitor', 'Restore')
-    lbs <- lbs[lbs %in% unique(site_pri$Priority)]
-    site_pri <- site_pri %>% 
-      mutate(Priority = factor(Priority, levels = lbs))
+      rename(Priority = value) %>% 
+      select(StationCode, COMID, csci, perf_mlt, typelv, lat, long, Priority)
 
     return(site_pri)
-
+    
+  })
+  
+  # all priority categories split for map
+  site_pri_map <- reactive({
+    
+    site_pri()
+    
+    # all priority categories to join with site_pri for split
+    all_pri <- crossing(StationCode = site_pri()$StationCode, pri = c('Protect', 'Monitor', 'Restore'))
+    
   })
   
   # the selection plot
@@ -174,77 +268,77 @@ server <- function(input, output, session) {
     siteplo()[[2]]
   })
   
-  # # non-reactive base map, condition expectations
-  # output$bs_pro <- renderLeaflet(
-  # 
-  #   leaflet(scrs) %>%
-  #     fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-  #     addProviderTiles(providers$CartoDB.Positron) %>%
-  #     syncWith('maps')
-  # 
-  # )
-  # 
-  # # non-reactive base map
-  # output$bs_mon <- renderLeaflet(
-  # 
-  #   leaflet(scrs) %>%
-  #     fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-  #     addProviderTiles(providers$CartoDB.Positron) %>%
-  #     syncWith('maps')
-  # 
-  # )
-  # 
-  # ##
-  # # reactive maps
-  # observe({
-  # 
-  #   # other inputs
-  #   ptsz <- input$pt_sz
-  #   lnsz <- input$ln_sz
-  # 
-  #   # reactives
-  #   dat_exp <- dat_exp()
-  #   scr_pri <- scr_pri()
-  # 
-  #   # condition expectations
-  #   pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
-  #     clearMarkers() %>%
-  #     clearShapes() %>%
-  #     clearControls() %>%
-  #     addPolylines(
-  #       opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
-  #     ) %>%
-  #     addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-  #                      label = ~paste0(StationCode),
-  #                      fillColor = ~pal_pri(Priority), color = 'black'
-  #     ) %>%
-  #     addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
-  #               title = "Priority",
-  #               opacity = 1
-  #     )    
-  # 
-  #   # condition expectations
-  #   pri_mon <- leafletProxy("bs_mon", data = dat_exp) %>%
-  #     clearMarkers() %>%
-  #     clearShapes() %>%
-  #     clearControls() %>%
-  #     addPolylines(
-  #       opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
-  #     ) %>%
-  #     addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-  #                      label = ~paste0(StationCode),
-  #                      fillColor = ~pal_pri(Priority), color = 'black'
-  #     ) %>%
-  #     addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
-  #               title = "Priority",
-  #               opacity = 1
-  #     )
-  # 
-  #   # sync the maps
-  #   combineWidgets(pri_pro, pri_mon)
-  # 
-  # })
-  # 
+  # non-reactive base map, condition expectations
+  output$bs_pro <- renderLeaflet(
+
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      syncWith('maps')
+
+  )
+
+  # non-reactive base map
+  output$bs_mon <- renderLeaflet(
+
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      syncWith('maps')
+
+  )
+
+  ##
+  # reactive maps
+  observe({
+
+    # other inputs
+    ptsz <- input$pt_sz
+    lnsz <- input$ln_sz
+
+    # reactives
+    dat_exp <- dat_exp()
+    scr_pri <- scr_pri()
+
+    # condition expectations
+    pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>%
+      addPolylines(
+        opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
+      ) %>%
+      addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                       label = ~paste0(StationCode),
+                       fillColor = ~pal_pri(Priority), color = 'black'
+      ) %>%
+      addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
+                title = "Priority",
+                opacity = 1
+      )
+
+    # condition expectations
+    pri_mon <- leafletProxy("bs_mon", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>%
+      addPolylines(
+        opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
+      ) %>%
+      addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                       label = ~paste0(StationCode),
+                       fillColor = ~pal_pri(Priority), color = 'black'
+      ) %>%
+      addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
+                title = "Priority",
+                opacity = 1
+      )
+
+    # sync the maps
+    combineWidgets(pri_pro, pri_mon)
+
+  })
+
   # # summary tables
   # output$tab_sum <- DT::renderDataTable({
   # 

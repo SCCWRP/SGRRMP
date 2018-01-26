@@ -8,7 +8,7 @@ library(tidyverse)
 library(rvest)
 
 # column padding
-pad <- 'padding:4px;'
+pad <- 'padding:4.2px;'
 
 # last commit date
 dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>% 
@@ -151,70 +151,70 @@ shinyUI(fluidPage(
              
       )
         
-    )
+    ),
     
-    # tabPanel('Maps', 
-    #   
-    #   h5("Move a slider to initialize maps..."),
-    #   
-    #   # select point radius
-    #   column(width = 4,
-    #         customSliderInput("pt_sz", 
-    #                           label = h6("Point size:"), 
-    #                           min = 0, 
-    #                           max = 15,
-    #                           value = 6, 
-    #                           step = 1, 
-    #                           width = '400px', 
-    #                           ticks = FALSE
-    #         )
-    #   ),
-    #   
-    #   # select line size
-    #   column(width = 4,
-    #         customSliderInput("ln_sz", 
-    #                           label = h6("Line size:"), 
-    #                           min = 0, 
-    #                           max = 5,
-    #                           value = 1, 
-    #                           step = 0.1, 
-    #                           width = '400px', 
-    #                           ticks = FALSE
-    #         )
-    #   
-    #   ),
-    #   
-    #   column(width = 4,
-    #          customSliderInput('jitr', 
-    #                            label = h6("Jitter overlaps:"), 
-    #                            min = 0, 
-    #                            max = 500,
-    #                            value = 0, 
-    #                            step = 25, 
-    #                            width = '400px', 
-    #                            ticks = FALSE
-    #          )
-    #          
-    #   ),
-    #   
-    #   # map_exp output
-    #   column(width = 6,
-    # 
-    #      leafletOutput('map_exp', width = '100%', height = 550),
-    #      h3()
-    # 
-    #   ) ,
-    # 
-    #   # map_pri output
-    #   column(width = 6,
-    # 
-    #      leafletOutput('map_pri', width = '100%', height = 550),
-    #      h3()
-    # 
-    #   )
-    # 
-    # ),
-    # 
+    tabPanel('Maps',
+
+      h5("Move a slider to initialize maps..."),
+
+      # select point radius
+      column(width = 4,
+            customSliderInput("pt_sz",
+                              label = h6("Point size:"),
+                              min = 0,
+                              max = 15,
+                              value = 6,
+                              step = 1,
+                              width = '400px',
+                              ticks = FALSE
+            )
+      ),
+
+      # select line size
+      column(width = 4,
+            customSliderInput("ln_sz",
+                              label = h6("Line size:"),
+                              min = 0,
+                              max = 5,
+                              value = 1,
+                              step = 0.1,
+                              width = '400px',
+                              ticks = FALSE
+            )
+
+      ),
+
+      column(width = 4,
+             customSliderInput('jitr',
+                               label = h6("Jitter overlaps:"),
+                               min = 0,
+                               max = 500,
+                               value = 0,
+                               step = 25,
+                               width = '400px',
+                               ticks = FALSE
+             )
+
+      ),
+
+      # map_exp output
+      column(width = 6,
+
+         leafletOutput('map_exp', width = '100%', height = 550),
+         h3()
+
+      ) ,
+
+      # map_pri output
+      column(width = 6,
+
+         leafletOutput('map_pri', width = '100%', height = 550),
+         h3()
+
+      )
+
+    )#,
+
     # tabPanel('Table', 
     #          
     #    # table output
