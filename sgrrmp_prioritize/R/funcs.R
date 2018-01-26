@@ -1,3 +1,11 @@
+######
+# get legend from an existing ggplot object
+g_legend <- function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)}
+
 #' Get biological expectation with changing threshold and likelihoods, same as getcls but only returns class designation
 plot_strcls <- function(datin, thrsh = 0.79, tails = 0.05, lbs = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2)){
   

@@ -6,6 +6,7 @@ library(stringr)
 library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
+library(gridExtra)
 source('R/funcs.R')
 
 # spatial comid data
@@ -13,6 +14,10 @@ load('data/spat.RData')
 
 # csci scores at sites
 load('data/scrs.RData')
+
+# globals
+thrsh <- 0.79
+tails <- 0.05
 
 sts <- paste('Site', seq(1:12))
 
@@ -60,31 +65,11 @@ pal_pri <- colorFactor(
 # server logic
 server <- function(input, output, session) {
   
-  # CSCI thresold reactive input
-  thrsh <- reactive({
-    
-    input$thrsh %>%
-      gsub('^.*\\(|\\)$', '', .) %>% 
-      as.numeric
-    
-  })
-  
-  # tails input as reactive, passed to multiple
-  tails <- reactive({
-    
-    tails <- input$tails %>% 
-      gsub('More certain|Less certain|\\(|\\)|\\s+', '', .) %>% 
-      as.numeric
-    tails <- 0.5 - tails
-    return(tails)
-    
-  })
-  
   # data to plot, polylines with score expections
   plot_ex <- reactive({
   
     # output
-    out <- proc_all(exps_ex, scrs_ex, thrsh = thrsh(), tails = tails())
+    out <- proc_all(exps_ex, scrs_ex, thrsh = 0.79, tails = 0.05)
 
     out
     
@@ -94,68 +79,13 @@ server <- function(input, output, session) {
   dat_exp <- reactive({
     
     # get biological condition expectations
-    cls <- getcls2(spat, thrsh = thrsh(), tails = tails(), modls = 'full')
+    cls <- getcls2(spat, thrsh = thrsh, tails = tails, modls = 'full')
     
     # join with spatial data
     out <- spat %>% 
       left_join(cls, by = 'COMID')
     
     out
-    
-  })
-  
-  # CSCI scores and stream condition expectations, maps only 
-  scr_exp_map <- reactive({
-    
-    jitr <- input$jitr
-    
-    # get csci spatially
-    csci_dat <- spat %>% 
-      select(COMID) %>% 
-      mutate(COMID = as.character(COMID)) %>% 
-      left_join(scrs, ., by = 'COMID') 
-    
-    # jitter scores with overlapping lat/lon
-    if(jitr != 0){
-      
-      csci_dat <- csci_dat %>% 
-        mutate(
-          lat = ifelse(duplicated(lat), jitter(lat, factor = jitr), lat),
-          long = ifelse(duplicated(long), jitter(long, factor = jitr), long)
-        )
-      
-      # take average csci is jitter is zero
-    } else {
-      
-      csci_dat <- csci_dat %>% 
-        group_by(COMID, StationCode, lat, long) %>% 
-        summarise(
-          csci = mean(csci, na.rm = TRUE)
-        ) %>% 
-        ungroup
-      
-    }
-    
-    # process
-    incl <- site_exp(spat, csci_dat, thrsh = thrsh(), tails = tails(), modls = 'full') %>% 
-      select(-lat, -long) %>% 
-      group_by(StationCode) %>% 
-      nest
-    
-    # assign csci station locations for jittr
-    out <- csci_dat %>% 
-      select(StationCode, lat, long) %>% 
-      group_by(StationCode) %>% 
-      nest %>% 
-      mutate(StationCode = factor(StationCode, levels = levels(incl$StationCode))) %>% 
-      left_join(incl, ., by = 'StationCode') %>% 
-      unnest
-    
-    # add additional perf column for multicolor by strcls (pal_prf)
-    out <- get_perf_mlt(out) %>% 
-      select(lat, long, perf_mlt, csci, StationCode, typelv, strcls, perf, typeoc)
-    
-    return(out)
     
   })
   
@@ -193,23 +123,12 @@ server <- function(input, output, session) {
 
   })
   
-  # expectation plot
-  output$plo_exp <- renderPlot({
-
-    ggplot(plot_ex(), aes(x = Site)) + 
-      geom_errorbar(aes(ymin = minv, ymax = maxv, colour = `Stream class`), width = 0, size = 2, alpha = 0.2) + 
-      geom_errorbar(aes(ymin = minv_qt, ymax = maxv_qt, colour = `Stream class`), width = 0, size = 2, alpha = 0.7) + 
-      geom_point(aes(y  = `CSCI score`, fill = `Relative\nperformance`), shape = 21, size = 7, alpha = 0.8) +
-      geom_text(y = 0.35, aes(label = typelv)) +
-      scale_y_continuous(limits = c(0.35, max(plot_ex()$`CSCI score`))) +
-      geom_hline(yintercept = thrsh(), linetype = 'dashed') +
-      scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)), 
-                          guide = guide_legend(direction = 'vertical', title.position = 'left')) +
-      scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nperformance`)), 
-                        guide = guide_legend(ncol = 3, direction = 'vertical', title.position = 'left')) +
-      theme_minimal(base_family = 'serif', base_size = 18) +
+  # the selection plot
+  siteplo <- reactive({
+    
+    mythm <- theme_minimal(base_family = 'serif', base_size = 18) +
       theme(
-        axis.title.x = element_blank(), 
+        axis.title.y = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         axis.line.x = element_line(), 
@@ -218,93 +137,123 @@ server <- function(input, output, session) {
         legend.position = 'top'
       )
     
-  })
-  
-  # non-reactive base map, condition expectations
-  output$map_exp <- renderLeaflet(
-
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
-
-  )
-
-  # non-reactive base map
-  output$map_pri <- renderLeaflet(
-
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
-
-  )
-
-  ##
-  # reactive maps
-  observe({
-
-    # other inputs
-    ptsz <- input$pt_sz
-    lnsz <- input$ln_sz
-
-    # reactives
-    dat_exp <- dat_exp()
-    scr_exp_map <- scr_exp_map()
-    scr_pri <- scr_pri()
-
-    # condition expectations
-    exp_bs <- leafletProxy("map_exp", data = dat_exp) %>%
-      clearMarkers() %>%
-      clearShapes() %>%
-      clearControls() %>%
-      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls),
-                   label = ~paste0(COMID, ', Stream class:', strcls)
-      ) %>%
-      addCircleMarkers(data = scr_exp_map, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt, ', ', typelv),
-                       fillColor = ~pal_prf(perf_mlt), color = 'black'
-      ) %>%
-      addLegend("topright", pal = pal_exp, values = ~strcls,
-                title = "Expected classification (lines)",
-                opacity = 1
-      ) %>%
-      addLegend("topright", pal = pal_prf, values = scr_exp_map$perf_mlt,
-                title = "CSCI performance (points)",
-                opacity = 1
-      )
-
-    # condition expectations
-    pri_bs <- leafletProxy("map_pri", data = dat_exp) %>%
-      clearMarkers() %>%
-      clearShapes() %>%
-      clearControls() %>%
-      addPolylines(
-        opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
-      ) %>%
-      addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-                       label = ~paste0(StationCode),
-                       fillColor = ~pal_pri(Priority), color = 'black'
-      ) %>%
-      addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
-                title = "Priority",
-                opacity = 1
-      )
-
-    # sync the maps
-    combineWidgets(exp_bs, pri_bs)
-
-  })
-  
-  # summary tables
-  output$tab_sum <- DT::renderDataTable({
-
-    # summary table by csci type          
-    totab <- get_tab(scr_exp_map(), scr_pri(), thrsh = thrsh(), tails = tails())
- 
-    return(totab)
+    p <- ggplot(plot_ex(), aes(x = Site)) + 
+      geom_errorbar(aes(ymin = minv, ymax = maxv, colour = `Stream class`), width = 0, size = 2, alpha = 0.2) + 
+      geom_errorbar(aes(ymin = minv_qt, ymax = maxv_qt, colour = `Stream class`), width = 0, size = 2, alpha = 0.7) + 
+      geom_point(aes(y  = `CSCI score`, fill = `Relative\nperformance`), shape = 21, size = 7, alpha = 0.8) +
+      geom_text(y = 0.35, aes(label = typelv)) +
+      scale_y_continuous(limits = c(0.35, max(plot_ex()$`CSCI score`))) +
+      geom_hline(yintercept = thrsh, linetype = 'dashed') +
+      scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)), 
+                          guide = guide_legend(direction = 'vertical', title.position = 'left')) +
+      scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nperformance`)), 
+                        guide = guide_legend(ncol = 3, direction = 'vertical', title.position = 'left')) +
+      scale_x_discrete(limits = rev(levels(plot_ex()$Site))) +
+      mythm +
+      coord_flip()
     
-  }, rownames = F, options = list(dom = 't', pageLength = 12))
+    # get legend
+    pleg <- g_legend(p)
+    p <- p +
+      mythm %+replace%
+      theme(legend.position = 'none')
+      
+    # output as list
+    plo_ls <- list(pleg, p)
+    return(plo_ls)
+ 
+  })
+  
+  # expectation plot legend
+  output$plo_leg <- renderPlot({
+    grid.arrange(siteplo()[[1]])
+  })
+  
+  # expectation plot
+  output$plo_exp <- renderPlot({
+    siteplo()[[2]]
+  })
+  
+  # # non-reactive base map, condition expectations
+  # output$bs_pro <- renderLeaflet(
+  # 
+  #   leaflet(scrs) %>%
+  #     fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
+  #     addProviderTiles(providers$CartoDB.Positron) %>%
+  #     syncWith('maps')
+  # 
+  # )
+  # 
+  # # non-reactive base map
+  # output$bs_mon <- renderLeaflet(
+  # 
+  #   leaflet(scrs) %>%
+  #     fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
+  #     addProviderTiles(providers$CartoDB.Positron) %>%
+  #     syncWith('maps')
+  # 
+  # )
+  # 
+  # ##
+  # # reactive maps
+  # observe({
+  # 
+  #   # other inputs
+  #   ptsz <- input$pt_sz
+  #   lnsz <- input$ln_sz
+  # 
+  #   # reactives
+  #   dat_exp <- dat_exp()
+  #   scr_pri <- scr_pri()
+  # 
+  #   # condition expectations
+  #   pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
+  #     clearMarkers() %>%
+  #     clearShapes() %>%
+  #     clearControls() %>%
+  #     addPolylines(
+  #       opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
+  #     ) %>%
+  #     addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+  #                      label = ~paste0(StationCode),
+  #                      fillColor = ~pal_pri(Priority), color = 'black'
+  #     ) %>%
+  #     addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
+  #               title = "Priority",
+  #               opacity = 1
+  #     )    
+  # 
+  #   # condition expectations
+  #   pri_mon <- leafletProxy("bs_mon", data = dat_exp) %>%
+  #     clearMarkers() %>%
+  #     clearShapes() %>%
+  #     clearControls() %>%
+  #     addPolylines(
+  #       opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
+  #     ) %>%
+  #     addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+  #                      label = ~paste0(StationCode),
+  #                      fillColor = ~pal_pri(Priority), color = 'black'
+  #     ) %>%
+  #     addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
+  #               title = "Priority",
+  #               opacity = 1
+  #     )
+  # 
+  #   # sync the maps
+  #   combineWidgets(pri_pro, pri_mon)
+  # 
+  # })
+  # 
+  # # summary tables
+  # output$tab_sum <- DT::renderDataTable({
+  # 
+  #   # summary table by csci type          
+  #   totab <- get_tab(scr_exp_map(), scr_pri(), thrsh = thrsh, tails = tails)
+  # 
+  #   return(totab)
+  #   
+  # }, rownames = F, options = list(dom = 't', pageLength = 12))
   
    
 }

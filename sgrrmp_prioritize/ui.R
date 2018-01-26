@@ -7,6 +7,9 @@ library(shinyWidgets)
 library(tidyverse)
 library(rvest)
 
+# column padding
+pad <- 'padding:4px;'
+
 # last commit date
 dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>% 
   html_nodes(".commit-group-title") %>% 
@@ -36,186 +39,193 @@ shinyUI(fluidPage(
 
     column(width = 12, 
       h4('Created by Marcus W. Beck,', a('marcusb@sccwrp.org', href = 'mailto:marcusb@sccwrp.org'), ", Raphael D. Mazor,", a('raphaelm@sccwrp.org', href = 'mailto:raphaelm@sccwrp.org'), ", Scott Johnson,", a('scott@aquaticbioassay.com', href = 'mailto:scott@aquaticbioassay.com'), ", Peter R. Ode,", a('Peter.Ode@wildlife.ca.gov', href = 'mailto:Peter.Ode@wildlife.ca.gov'))
-      ),
-    
-    column(width = 4, 
-           
-      # select CSCI threshold, master
-      sliderTextInput(
-        inputId = "thrsh",
-        label = h6("CSCI reference threshold:"),
-        grid = FALSE,
-        force_edges = TRUE,
-        selected = '10% (0.79)',
-        choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
-        width = '600px'
       )
-      
-    ),
-    
-    column(width = 4, 
-           
-      # selected tails, master
-      sliderTextInput(
-        inputId = "tails", 
-        label = h6("Confidence range (+/-):"),  
-        grid = FALSE, 
-        force_edges = TRUE,
-        choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
-        width = '600px'
-      )   
-      
-    )
 
   ),
     
   tabsetPanel(
     
     tabPanel('Prioritize',
-             
-      # plot output
+      
+      # plot output legend
       column(width = 12,
             
-        plotOutput('plo_exp', width = '100%', height = 450)
+        plotOutput('plo_leg', width = '100%', height = 100)
             
-      ), 
-        
-      column(width = 1,
-        radioButtons('Site 1', 'Site 1', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Protect',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 2', 'Site 2', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Monitor',
-                    inline = FALSE, width = NULL)
       ),
-      
-      column(width = 1,
-        radioButtons('Site 3', 'Site 3', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Monitor',
-                    inline = FALSE, width = NULL)
-      ), 
-    
-      column(width = 1,
-        radioButtons('Site 4', 'Site 4', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Restore',
-                    inline = FALSE, width = NULL)
-      ), 
-    
-      column(width = 1,
-        radioButtons('Site 5', 'Site 5', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Protect',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 6', 'Site 6', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Monitor',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 7', 'Site 7', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Restore',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 8', 'Site 8', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Restore',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 9', 'Site 9', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Protect',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 10', 'Site 10', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Monitor',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 11', 'Site 11', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Monitor',
-                    inline = FALSE, width = NULL)
-      ), 
-      
-      column(width = 1,
-        radioButtons('Site 12', 'Site 12', choices = c('Protect', 'Monitor', 'Restore'), selected = 'Monitor',
-                    inline = FALSE, width = NULL)
-      
+
+      # site priority selectors             
+      column(width = 2, 
+
+        div(style = 'padding:12px;'),
+        
+        div(style = pad,
+               pickerInput(inputId = "Site1", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+                    
+        div(style = pad,
+               pickerInput(inputId = "Site2", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                 options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                 multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site3", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site4", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site5", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site6", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site7", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site8", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site9", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site10", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site11", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site12", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           multiple = TRUE
+               )
+        )
+        
+      ),
+      # plot output
+      column(width = 10,
+             
+             plotOutput('plo_exp', width = '100%', height = 800)
+             
       )
         
-    ), 
-    
-    tabPanel('Maps', 
-      
-      h5("Move a slider to initialize maps..."),
-      
-      # select point radius
-      column(width = 4,
-            customSliderInput("pt_sz", 
-                              label = h6("Point size:"), 
-                              min = 0, 
-                              max = 15,
-                              value = 6, 
-                              step = 1, 
-                              width = '400px', 
-                              ticks = FALSE
-            )
-      ),
-      
-      # select line size
-      column(width = 4,
-            customSliderInput("ln_sz", 
-                              label = h6("Line size:"), 
-                              min = 0, 
-                              max = 5,
-                              value = 1, 
-                              step = 0.1, 
-                              width = '400px', 
-                              ticks = FALSE
-            )
-      
-      ),
-      
-      column(width = 4,
-             customSliderInput('jitr', 
-                               label = h6("Jitter overlaps:"), 
-                               min = 0, 
-                               max = 500,
-                               value = 0, 
-                               step = 25, 
-                               width = '400px', 
-                               ticks = FALSE
-             )
-             
-      ),
-      
-      # map_exp output
-      column(width = 6,
-
-         leafletOutput('map_exp', width = '100%', height = 550),
-         h3()
-
-      ) ,
-
-      # map_pri output
-      column(width = 6,
-
-         leafletOutput('map_pri', width = '100%', height = 550),
-         h3()
-
-      )
-
-    ),
-    
-    tabPanel('Table', 
-             
-       # table output
-       column(width = 12, 
-              
-          DT::dataTableOutput('tab_sum'), 
-          HTML('<p></p>')
-          
-       )
-             
     )
+    
+    # tabPanel('Maps', 
+    #   
+    #   h5("Move a slider to initialize maps..."),
+    #   
+    #   # select point radius
+    #   column(width = 4,
+    #         customSliderInput("pt_sz", 
+    #                           label = h6("Point size:"), 
+    #                           min = 0, 
+    #                           max = 15,
+    #                           value = 6, 
+    #                           step = 1, 
+    #                           width = '400px', 
+    #                           ticks = FALSE
+    #         )
+    #   ),
+    #   
+    #   # select line size
+    #   column(width = 4,
+    #         customSliderInput("ln_sz", 
+    #                           label = h6("Line size:"), 
+    #                           min = 0, 
+    #                           max = 5,
+    #                           value = 1, 
+    #                           step = 0.1, 
+    #                           width = '400px', 
+    #                           ticks = FALSE
+    #         )
+    #   
+    #   ),
+    #   
+    #   column(width = 4,
+    #          customSliderInput('jitr', 
+    #                            label = h6("Jitter overlaps:"), 
+    #                            min = 0, 
+    #                            max = 500,
+    #                            value = 0, 
+    #                            step = 25, 
+    #                            width = '400px', 
+    #                            ticks = FALSE
+    #          )
+    #          
+    #   ),
+    #   
+    #   # map_exp output
+    #   column(width = 6,
+    # 
+    #      leafletOutput('map_exp', width = '100%', height = 550),
+    #      h3()
+    # 
+    #   ) ,
+    # 
+    #   # map_pri output
+    #   column(width = 6,
+    # 
+    #      leafletOutput('map_pri', width = '100%', height = 550),
+    #      h3()
+    # 
+    #   )
+    # 
+    # ),
+    # 
+    # tabPanel('Table', 
+    #          
+    #    # table output
+    #    column(width = 12, 
+    #           
+    #       DT::dataTableOutput('tab_sum'), 
+    #       HTML('<p></p>')
+    #       
+    #    )
+    #          
+    # )
                   
   )
 
