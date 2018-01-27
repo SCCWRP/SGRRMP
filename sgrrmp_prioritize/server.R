@@ -177,43 +177,50 @@ server <- function(input, output, session) {
     
   })
   
-  # site priorities
-  scr_pri_tab <- reactive({
+  # site priorities from user selections
+  scr_pri <- reactive({
 
-    # get plot example constraints
+    # get plot example site, types
     ex_jn <- plot_ex() %>% 
       select(Site, typelv)
     
     # site classications
     scr_exp_map <- scr_exp_map() %>%
       mutate(typelv = as.character(typelv))
-    
+ 
     # format site priorities from input
-    site_pri <- isolate(reactiveValuesToList(input)) %>%
+    scr_pri <- list(
+        `Site 1` = input$`Site 1`,
+        `Site 2` = input$`Site 2`,
+        `Site 3` = input$`Site 3`,
+        `Site 4` = input$`Site 4`,
+        `Site 5` = input$`Site 5`,
+        `Site 6` = input$`Site 6`,
+        `Site 7` = input$`Site 7`,
+        `Site 8` = input$`Site 8`,
+        `Site 9` = input$`Site 9`,
+        `Site 10` = input$`Site 10`,
+        `Site 11` = input$`Site 11`,
+        `Site 12` = input$`Site 12`
+      ) %>% 
       enframe %>%
       filter(grepl('^Site', name)) %>%
       mutate(value = map(value, ~ ifelse(is.null(.x), 'do nothing', .x))) %>% 
       unnest %>%
       rename(Site = name) %>%
-      mutate(Site = factor(Site, levels = levels(ex_jn$Site))) %>%
+      mutate(
+        Site = factor(Site, levels = levels(ex_jn$Site))
+        ) %>%
       left_join(ex_jn, by = 'Site') %>%
       mutate(typelv = as.character(typelv)) %>%
       select(-Site) %>%
       left_join(scr_exp_map, ., by = 'typelv') %>%
       rename(Priority = value) %>% 
-      select(StationCode, COMID, csci, perf_mlt, typelv, lat, long, Priority)
-
-    return(site_pri)
+      select(StationCode, COMID, csci, perf_mlt, typelv, lat, long, Priority) %>% 
+      split(.$Priority) %>% 
+      enframe('Priority')
     
-  })
-  
-  # all priority categories split for map
-  site_pri_map <- reactive({
-    
-    site_pri()
-    
-    # all priority categories to join with site_pri for split
-    all_pri <- crossing(StationCode = site_pri()$StationCode, pri = c('Protect', 'Monitor', 'Restore'))
+    return(scr_pri)
     
   })
   
@@ -268,7 +275,17 @@ server <- function(input, output, session) {
     siteplo()[[2]]
   })
   
-  # non-reactive base map, condition expectations
+  # non-reactive base map, do nothing priority
+  output$bs_don <- renderLeaflet(
+
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      syncWith('maps')
+
+  )
+
+  # non-reactive base map, protect priority
   output$bs_pro <- renderLeaflet(
 
     leaflet(scrs) %>%
@@ -278,16 +295,26 @@ server <- function(input, output, session) {
 
   )
 
-  # non-reactive base map
+  # non-reactive base map, monitor priority
   output$bs_mon <- renderLeaflet(
-
+    
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       syncWith('maps')
-
+    
   )
-
+  
+  # non-reactive base map, restore priority
+  output$bs_res <- renderLeaflet(
+    
+    leaflet(scrs) %>%
+      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      syncWith('maps')
+    
+  )
+  
   ##
   # reactive maps
   observe({
@@ -300,54 +327,101 @@ server <- function(input, output, session) {
     dat_exp <- dat_exp()
     scr_pri <- scr_pri()
 
-    # condition expectations
+    # get seperate priorities from scr_pri_map
+    dat_pro <- filter(scr_pri, Priority %in% 'Protect')$value
+    dat_mon <- filter(scr_pri, Priority %in% 'Monitor')$value
+    dat_res <- filter(scr_pri, Priority %in% 'Restore')$value
+    dat_don <- filter(scr_pri, Priority %in% 'do nothing')$value
+    
+    # base protect map
     pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
       clearMarkers() %>%
       clearShapes() %>%
-      clearControls() %>%
-      addPolylines(
-        opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
-      ) %>%
-      addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-                       label = ~paste0(StationCode),
-                       fillColor = ~pal_pri(Priority), color = 'black'
-      ) %>%
-      addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
-                title = "Priority",
-                opacity = 1
-      )
-
-    # condition expectations
+      clearControls() %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = 'grey') 
+    
+    # base monitor map
     pri_mon <- leafletProxy("bs_mon", data = dat_exp) %>%
       clearMarkers() %>%
       clearShapes() %>%
-      clearControls() %>%
-      addPolylines(
-        opacity = 1, weight = lnsz, label = ~ COMID, color = 'grey'
-      ) %>%
-      addCircleMarkers(data = scr_pri, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-                       label = ~paste0(StationCode),
-                       fillColor = ~pal_pri(Priority), color = 'black'
-      ) %>%
-      addLegend("topright", pal = pal_pri, values = scr_pri$Priority,
-                title = "Priority",
-                opacity = 1
-      )
-
+      clearControls() %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = 'grey') 
+    
+    # base restore map
+    pri_res <- leafletProxy("bs_res", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = 'grey') 
+    
+    # base do nothing map
+    pri_don <- leafletProxy("bs_don", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = 'grey')  
+    
+    # add protect points if not empty
+    if(length(dat_pro) > 0){
+      
+      pri_pro <- pri_pro %>% 
+        addCircleMarkers(data = dat_pro[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = 'grey', color = 'black'
+        )
+      
+    }
+    
+    # add monitor points if not empty
+    if(length(dat_mon) > 0){
+      
+      pri_mon <- pri_mon %>% 
+        addCircleMarkers(data = dat_mon[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = 'grey', color = 'black'
+        )
+      
+    }
+    
+    # add restore points if not empty
+    if(length(dat_res) > 0){
+      
+      pri_res <- pri_res %>% 
+        addCircleMarkers(data = dat_res[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = 'grey', color = 'black'
+        )
+      
+    }
+    
+    # add do nothing points if not empty
+    if(length(dat_don) > 0){
+      
+      pri_don <- pri_don %>% 
+        addCircleMarkers(data = dat_don[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = 'grey', color = 'black'
+        )
+      
+    }
+    
     # sync the maps
-    combineWidgets(pri_pro, pri_mon)
+    combineWidgets(pri_pro, pri_mon, pri_res, pri_don)
 
   })
 
-  # # summary tables
-  # output$tab_sum <- DT::renderDataTable({
-  # 
-  #   # summary table by csci type          
-  #   totab <- get_tab(scr_exp_map(), scr_pri(), thrsh = thrsh, tails = tails)
-  # 
-  #   return(totab)
-  #   
-  # }, rownames = F, options = list(dom = 't', pageLength = 12))
+  # priority counts
+  output$cnts <- reactive({
+
+    cnts <- scr_pri() %>% 
+      mutate(n = map(value, nrow)) %>% 
+      select(-value) %>% 
+      deframe
+    names(cnts)[names(cnts) == 'do nothing'] <- 'donothing'
+    
+    return(cnts)
+    
+  })
   
    
 }

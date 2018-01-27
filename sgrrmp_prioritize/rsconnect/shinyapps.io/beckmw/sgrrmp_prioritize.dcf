@@ -5,6 +5,6 @@ account: beckmw
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 260038
-bundleId: 1189887
+bundleId: 1195284
 url: https://beckmw.shinyapps.io/sgrrmp_prioritize/
-when: 1516757729.36409
+when: 1517021012.56279

@@ -4,11 +4,12 @@ library(shinyBS)
 library(shinyCustom)
 library(shinydashboard)
 library(shinyWidgets)
+library(ShinyDash)
 library(tidyverse)
 library(rvest)
 
 # column padding
-pad <- 'padding:4.2px;'
+pad <- 'padding:4.1px;'
 
 # last commit date
 dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>% 
@@ -60,84 +61,94 @@ shinyUI(fluidPage(
         div(style = 'padding:12px;'),
         
         div(style = pad,
-               pickerInput(inputId = "Site1", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 1", label = NULL, choices = c('Protect', 'Monitor', 'Restore'),
+                           selected = 'Protect',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
                     
         div(style = pad,
-               pickerInput(inputId = "Site2", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                 options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
-                 multiple = TRUE
+               pickerInput(inputId = "Site 2", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                          selected = 'Monitor',
+                          options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                          multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site3", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 3", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = 'Monitor',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site4", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 4", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = 'Restore',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site5", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 5", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = c('Protect', 'Monitor'),
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site6", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = 'Monitor',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site7", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 7", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = c('Restore', 'Monitor'),
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site8", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 8", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = c('Restore', 'Monitor'),
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site9", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 9", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = c('Monitor', 'Protect'),
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site10", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 10", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           selected = 'Monitor',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site11", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 11", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site12", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 12", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
@@ -147,7 +158,7 @@ shinyUI(fluidPage(
       # plot output
       column(width = 10,
              
-             plotOutput('plo_exp', width = '100%', height = 800)
+        plotOutput('plo_exp', width = '100%', height = 800)
              
       )
         
@@ -197,20 +208,47 @@ shinyUI(fluidPage(
 
       ),
 
-      # map_exp output
+      # site counts
+      column(width = 12,
+             htmlWidgetOutput(
+               outputId = 'cnts',
+               HTML(paste('<h4>Total site counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore, <b><span id="donothing"></span></b> do nothing</h4>'))
+             )),
+             
+      # protect map
       column(width = 6,
 
-         leafletOutput('map_exp', width = '100%', height = 550),
-         h3()
+        h3('Protect'),
+        leafletOutput('bs_pro', width = '100%', height = 550),
+        h3()
 
-      ) ,
-
-      # map_pri output
+      ),
+      
+      # monitor map
       column(width = 6,
+        
+        h3('Monitor'), 
+        leafletOutput('bs_mon', width = '100%', height = 550),
+        h3()
 
-         leafletOutput('map_pri', width = '100%', height = 550),
-         h3()
-
+      ),
+      
+      # restore map
+      column(width = 6,
+          
+        h3('Restore'),
+        leafletOutput('bs_res', width = '100%', height = 550),
+        h3()
+             
+      ),
+      
+      # do nothing map
+      column(width = 6,
+             
+        h3('Do nothing'),
+        leafletOutput('bs_don', width = '100%', height = 550),
+        h3()
+             
       )
 
     )#,
