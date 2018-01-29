@@ -57,6 +57,13 @@ pal_pri <- colorFactor(
   na.color = 'yellow',
   levels = c('Protect', 'Monitor', 'Restore'))
 
+# color palette for CSCI type
+pal_typ <- colorFactor(
+  palette = RColorBrewer::brewer.pal(11, 'Spectral'),#hue_pal()(100), 
+  na.color = 'yellow',
+  domain = paste0('Type', sprintf('%02d', seq(1:12)))
+)
+
 # server logic
 server <- function(input, output, session) {
   
@@ -357,7 +364,11 @@ server <- function(input, output, session) {
       pri_pro <- pri_pro %>% 
         addCircleMarkers(data = dat_pro[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
                          label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
-                         fillColor = 'grey', color = 'black'
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_pro[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
         )
       
     }
@@ -368,7 +379,11 @@ server <- function(input, output, session) {
       pri_mon <- pri_mon %>% 
         addCircleMarkers(data = dat_mon[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
                          label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
-                         fillColor = 'grey', color = 'black'
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_mon[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
         )
       
     }
@@ -379,9 +394,12 @@ server <- function(input, output, session) {
       pri_res <- pri_res %>% 
         addCircleMarkers(data = dat_res[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
                          label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
-                         fillColor = 'grey', color = 'black'
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_res[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
         )
-      
     }
     
     # add do nothing points if not empty
@@ -390,9 +408,13 @@ server <- function(input, output, session) {
       pri_don <- pri_don %>% 
         addCircleMarkers(data = dat_don[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
                          label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
-                         fillColor = 'grey', color = 'black'
-        )
-      
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_don[[1]]$typelv,
+                            title = "Site type (points)",
+                            opacity = 1
+                  )
+
     }
     
     # sync the maps

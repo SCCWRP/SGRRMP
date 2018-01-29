@@ -183,28 +183,28 @@ shinyUI(fluidPage(
 
       # select line size
       column(width = 4,
-            customSliderInput("ln_sz",
-                              label = h6("Line size:"),
-                              min = 0,
-                              max = 5,
-                              value = 1,
-                              step = 0.1,
-                              width = '400px',
-                              ticks = FALSE
-            )
+        customSliderInput("ln_sz",
+                          label = h6("Line size:"),
+                          min = 0,
+                          max = 5,
+                          value = 1,
+                          step = 0.1,
+                          width = '400px',
+                          ticks = FALSE
+        )
 
       ),
 
       column(width = 4,
-             customSliderInput('jitr',
-                               label = h6("Jitter overlaps:"),
-                               min = 0,
-                               max = 500,
-                               value = 0,
-                               step = 25,
-                               width = '400px',
-                               ticks = FALSE
-             )
+        customSliderInput('jitr',
+                         label = h6("Jitter overlaps:"),
+                         min = 0,
+                         max = 500,
+                         value = 0,
+                         step = 25,
+                         width = '400px',
+                         ticks = FALSE
+        )
 
       ),
 
@@ -287,19 +287,7 @@ shinyUI(fluidPage(
              
       )
 
-    )#,
-
-    # tabPanel('Table', 
-    #          
-    #    # table output
-    #    column(width = 12, 
-    #           
-    #       DT::dataTableOutput('tab_sum'), 
-    #       HTML('<p></p>')
-    #       
-    #    )
-    #          
-    # )
+    )
                   
   )
 
