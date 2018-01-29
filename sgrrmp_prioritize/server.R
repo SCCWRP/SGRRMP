@@ -222,18 +222,16 @@ server <- function(input, output, session) {
         legend.position = 'top'
       )
     
-    p <- ggplot(plot_ex(), aes(x = Site)) + 
+    p <- ggplot(plot_ex(), aes(x = typelv)) + 
       geom_errorbar(aes(ymin = minv, ymax = maxv, colour = `Stream class`), width = 0, size = 2, alpha = 0.2) + 
       geom_errorbar(aes(ymin = minv_qt, ymax = maxv_qt, colour = `Stream class`), width = 0, size = 2, alpha = 0.7) + 
       geom_point(aes(y  = `CSCI score`, fill = `Relative\nperformance`), shape = 21, size = 7, alpha = 0.8) +
-      geom_text(y = 0.35, aes(label = typelv)) +
-      scale_y_continuous(limits = c(0.35, max(plot_ex()$`CSCI score`))) +
       geom_hline(yintercept = 0.79, linetype = 'dashed') +
       scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)), 
                           guide = guide_legend(direction = 'vertical', title.position = 'left')) +
       scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nperformance`)), 
                         guide = guide_legend(ncol = 3, direction = 'vertical', title.position = 'left')) +
-      scale_x_discrete(limits = rev(levels(plot_ex()$Site))) +
+      scale_x_discrete(limits = rev(levels(plot_ex()$typelv))) +
       mythm +
       coord_flip()
     
