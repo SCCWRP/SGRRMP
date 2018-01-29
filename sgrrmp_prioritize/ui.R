@@ -7,6 +7,7 @@ library(shinyWidgets)
 library(ShinyDash)
 library(tidyverse)
 library(rvest)
+library(leaflet.extras)
 
 # column padding
 pad <- 'padding:4.1px;'
@@ -61,94 +62,96 @@ shinyUI(fluidPage(
         div(style = 'padding:12px;'),
         
         div(style = pad,
-               pickerInput(inputId = "Site 1", label = NULL, choices = c('Protect', 'Monitor', 'Restore'),
-                           selected = 'Protect',
+               pickerInput(inputId = "Site 1", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'),
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
                     
         div(style = pad,
-               pickerInput(inputId = "Site 2", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                          selected = 'Monitor',
+               pickerInput(inputId = "Site 2", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                          selected = 'Do nothing',
                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                           multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 3", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = 'Monitor',
+               pickerInput(inputId = "Site 3", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 4", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = 'Restore',
+               pickerInput(inputId = "Site 4", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 5", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = c('Protect', 'Monitor'),
+               pickerInput(inputId = "Site 5", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = 'Monitor',
+               pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 7", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = c('Restore', 'Monitor'),
+               pickerInput(inputId = "Site 7", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 8", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = c('Restore', 'Monitor'),
+               pickerInput(inputId = "Site 8", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 9", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = c('Monitor', 'Protect'),
+               pickerInput(inputId = "Site 9", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 10", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           selected = 'Monitor',
+               pickerInput(inputId = "Site 10", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 11", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 11", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 12", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+               pickerInput(inputId = "Site 12", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
+                           selected = 'Do nothing',
                            options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
                            multiple = TRUE
                )

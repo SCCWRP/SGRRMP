@@ -7,6 +7,7 @@ library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
 library(gridExtra)
+library(leaflet.extras)
 source('R/funcs.R')
 
 # spatial comid data
@@ -180,47 +181,8 @@ server <- function(input, output, session) {
   # site priorities from user selections
   scr_pri <- reactive({
 
-    # get plot example site, types
-    ex_jn <- plot_ex() %>% 
-      select(Site, typelv)
-    
-    # site classications
-    scr_exp_map <- scr_exp_map() %>%
-      mutate(typelv = as.character(typelv))
- 
-    # format site priorities from input
-    scr_pri <- list(
-        `Site 1` = input$`Site 1`,
-        `Site 2` = input$`Site 2`,
-        `Site 3` = input$`Site 3`,
-        `Site 4` = input$`Site 4`,
-        `Site 5` = input$`Site 5`,
-        `Site 6` = input$`Site 6`,
-        `Site 7` = input$`Site 7`,
-        `Site 8` = input$`Site 8`,
-        `Site 9` = input$`Site 9`,
-        `Site 10` = input$`Site 10`,
-        `Site 11` = input$`Site 11`,
-        `Site 12` = input$`Site 12`
-      ) %>% 
-      enframe %>%
-      filter(grepl('^Site', name)) %>%
-      mutate(value = map(value, ~ ifelse(is.null(.x), 'do nothing', .x))) %>% 
-      unnest %>%
-      rename(Site = name) %>%
-      mutate(
-        Site = factor(Site, levels = levels(ex_jn$Site))
-        ) %>%
-      left_join(ex_jn, by = 'Site') %>%
-      mutate(typelv = as.character(typelv)) %>%
-      select(-Site) %>%
-      left_join(scr_exp_map, ., by = 'typelv') %>%
-      rename(Priority = value) %>% 
-      select(StationCode, COMID, csci, perf_mlt, typelv, lat, long, Priority) %>% 
-      split(.$Priority) %>% 
-      enframe('Priority')
-    
-    return(scr_pri)
+    out <- get_pri_inp(input, plot_ex(), scr_exp_map()) 
+    return(out)
     
   })
   
@@ -281,7 +243,8 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
+      syncWith('maps') %>% 
+      suspendScroll(hoverToWake = F)
 
   )
 
@@ -291,7 +254,8 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
+      syncWith('maps') %>% 
+      suspendScroll(hoverToWake = F)
 
   )
 
@@ -301,7 +265,8 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
+      syncWith('maps')  %>% 
+      suspendScroll(hoverToWake = F)
     
   )
   
@@ -311,7 +276,8 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
+      syncWith('maps') %>% 
+      suspendScroll(hoverToWake = F)
     
   )
   
@@ -331,7 +297,7 @@ server <- function(input, output, session) {
     dat_pro <- filter(scr_pri, Priority %in% 'Protect')$value
     dat_mon <- filter(scr_pri, Priority %in% 'Monitor')$value
     dat_res <- filter(scr_pri, Priority %in% 'Restore')$value
-    dat_don <- filter(scr_pri, Priority %in% 'do nothing')$value
+    dat_don <- filter(scr_pri, Priority %in% 'Do nothing')$value
     
     # base protect map
     pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
