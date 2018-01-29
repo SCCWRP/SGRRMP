@@ -7,7 +7,6 @@ library(shinyWidgets)
 library(ShinyDash)
 library(tidyverse)
 library(rvest)
-library(leaflet.extras)
 
 # column padding
 pad <- 'padding:4.1px;'
@@ -18,6 +17,16 @@ dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>%
   html_text %>% 
   .[1] %>% 
   gsub('^.*Commits on (.*)\\n.*$', '\\1', .)
+
+# html text for type counts
+typi <- paste0('Type', sprintf('%02d', seq(1, 12)))
+typtxt <- NULL
+for(i in typi){
+  ctxt <- paste0('<b><span id="', i, '"></span></b> ', i)
+  typtxt <- c(typtxt, ctxt)
+}
+typtxt <- paste(typtxt, collapse = ', ') %>% 
+  paste('<h5>Site type counts:', ., '</h5>')
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -63,96 +72,84 @@ shinyUI(fluidPage(
         
         div(style = pad,
                pickerInput(inputId = "Site 1", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'),
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
                     
         div(style = pad,
                pickerInput(inputId = "Site 2", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                          selected = 'Do nothing',
-                          options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                          options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                           multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 3", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 4", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 5", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+               pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 7", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 8", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 9", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 10", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 11", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 12", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           selected = 'Do nothing',
-                           options = list(`actions-box` = TRUE, size = 20, `selected-text-format` = "count > 3"), 
+                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
                            multiple = TRUE
                )
         )
@@ -211,13 +208,49 @@ shinyUI(fluidPage(
 
       ),
 
-      # site counts
+      column(width = 4, 
+             
+        # select CSCI threshold, master
+        sliderTextInput(
+          inputId = "thrsh",
+          label = h6("CSCI reference threshold:"),
+          grid = FALSE,
+          force_edges = TRUE,
+          selected = '10% (0.79)',
+          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
+          width = '600px'
+        )
+        
+      ),
+      
+      column(width = 4,
+             
+        # selected tails, master
+        sliderTextInput(
+          inputId = "tails", 
+          label = h6("Confidence range (+/-):"),  
+          grid = FALSE, 
+          force_edges = TRUE,
+          choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
+          width = '600px'
+        )
+        
+      ),
+      
+      # site priority counts
       column(width = 12,
              htmlWidgetOutput(
                outputId = 'cnts',
-               HTML(paste('<h4>Total site counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore, <b><span id="donothing"></span></b> do nothing</h4>'))
+               HTML('<h4>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore, <b><span id="Donothing"></span></b> do nothing</h4>')
              )),
              
+      # site type counts
+      column(width = 12,
+             htmlWidgetOutput(
+               outputId = 'typs',
+               HTML(typtxt)
+             )),
+      
       # protect map
       column(width = 6,
 

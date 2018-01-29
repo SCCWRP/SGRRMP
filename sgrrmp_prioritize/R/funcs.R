@@ -684,6 +684,7 @@ get_pri_inp <- function(input, plot_ex, scr_exp_map){
     `Site 12` = input$`Site 12`
     ) %>% 
     enframe('Site', 'Priority') %>%
+    mutate(Priority = map(Priority, ~ ifelse(is.null(.x), 'Do nothing', .x))) %>%
     unnest %>%
     mutate(
       Site = factor(Site, levels = levels(ex_jn$Site))

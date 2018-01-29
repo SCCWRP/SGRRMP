@@ -7,7 +7,6 @@ library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
 library(gridExtra)
-library(leaflet.extras)
 source('R/funcs.R')
 
 # spatial comid data
@@ -15,10 +14,6 @@ load('data/spat.RData')
 
 # csci scores at sites
 load('data/scrs.RData')
-
-# globals
-thrsh <- 0.79
-tails <- 0.05
 
 sts <- paste('Site', seq(1:12))
 
@@ -69,7 +64,7 @@ server <- function(input, output, session) {
   plot_ex <- reactive({
   
     # output
-    out <- proc_all(exps_ex, scrs_ex, thrsh = thrsh, tails = tails)
+    out <- proc_all(exps_ex, scrs_ex, thrsh = 0.79, tails = 0.05)
 
     out
     
@@ -87,11 +82,31 @@ server <- function(input, output, session) {
     
   })
   
+  # tails input as reactive, passed to multiple
+  tails <- reactive({
+    
+    tails <- input$tails %>% 
+      gsub('More certain|Less certain|\\(|\\)|\\s+', '', .) %>% 
+      as.numeric
+    tails <- 0.5 - tails
+    return(tails)
+    
+  })
+  
+  # CSCI thresold reactive input
+  thrsh <- reactive({
+    
+    input$thrsh %>%
+      gsub('^.*\\(|\\)$', '', .) %>% 
+      as.numeric
+    
+  })
+  
   # data to plot, polylines with condition expectations
   dat_exp <- reactive({
     
     # get biological condition expectations
-    cls <- getcls2(spat, thrsh = thrsh, tails = tails, modls = 'full')
+    cls <- getcls2(spat, thrsh = thrsh(), tails = tails(), modls = 'full')
     
     # join with spatial data
     out <- spat %>% 
@@ -143,7 +158,7 @@ server <- function(input, output, session) {
   scr_exp_map <- reactive({
     
     # process
-    incl <- site_exp(spat, csci(), thrsh = thrsh, tails = tails, modls = 'full') %>% 
+    incl <- site_exp(spat, csci(), thrsh = thrsh(), tails = tails(), modls = 'full') %>% 
       select(-lat, -long) %>% 
       group_by(StationCode) %>% 
       nest
@@ -169,7 +184,7 @@ server <- function(input, output, session) {
   scr_exp <- reactive({
     
     # process
-    incl <- site_exp(spat, scrs, thrsh = thrsh, tails = tails, modls = 'full')
+    incl <- site_exp(spat, scrs, thrsh = thrsh(), tails = tails(), modls = 'full')
     
     # add additional perf column for multicolor by strcls (pal_prf)
     out <- get_perf_mlt(incl)
@@ -206,7 +221,7 @@ server <- function(input, output, session) {
       geom_point(aes(y  = `CSCI score`, fill = `Relative\nperformance`), shape = 21, size = 7, alpha = 0.8) +
       geom_text(y = 0.35, aes(label = typelv)) +
       scale_y_continuous(limits = c(0.35, max(plot_ex()$`CSCI score`))) +
-      geom_hline(yintercept = thrsh, linetype = 'dashed') +
+      geom_hline(yintercept = 0.79, linetype = 'dashed') +
       scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)), 
                           guide = guide_legend(direction = 'vertical', title.position = 'left')) +
       scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nperformance`)), 
@@ -243,8 +258,7 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps') %>% 
-      suspendScroll(hoverToWake = F)
+      syncWith('maps')
 
   )
 
@@ -254,8 +268,7 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps') %>% 
-      suspendScroll(hoverToWake = F)
+      syncWith('maps')
 
   )
 
@@ -265,8 +278,7 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')  %>% 
-      suspendScroll(hoverToWake = F)
+      syncWith('maps')
     
   )
   
@@ -276,8 +288,7 @@ server <- function(input, output, session) {
     leaflet(scrs) %>%
       fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps') %>% 
-      suspendScroll(hoverToWake = F)
+      syncWith('maps')
     
   )
   
@@ -304,28 +315,41 @@ server <- function(input, output, session) {
       clearMarkers() %>%
       clearShapes() %>%
       clearControls() %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = 'grey') 
+      addLegend("topright", pal = pal_exp, values = ~strcls,
+                title = "Expected classification (lines)",
+                opacity = 1
+      ) %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      )
     
     # base monitor map
     pri_mon <- leafletProxy("bs_mon", data = dat_exp) %>%
       clearMarkers() %>%
       clearShapes() %>%
       clearControls() %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = 'grey') 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      ) 
     
     # base restore map
     pri_res <- leafletProxy("bs_res", data = dat_exp) %>%
       clearMarkers() %>%
       clearShapes() %>%
       clearControls() %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = 'grey') 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      )
     
     # base do nothing map
     pri_don <- leafletProxy("bs_don", data = dat_exp) %>%
       clearMarkers() %>%
       clearShapes() %>%
       clearControls() %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = 'grey')  
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      )
+    
     
     # add protect points if not empty
     if(length(dat_pro) > 0){
@@ -379,13 +403,47 @@ server <- function(input, output, session) {
   # priority counts
   output$cnts <- reactive({
 
-    cnts <- scr_pri() %>% 
-      mutate(n = map(value, nrow)) %>% 
-      select(-value) %>% 
-      deframe
-    names(cnts)[names(cnts) == 'do nothing'] <- 'donothing'
+    # to join to get all priority categories (for those with zero)
+    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore', 'Do nothing'), stringsAsFactors = F)
     
+    # get priority counts, join with allpri for all priority categories
+    cnts <- scr_pri() %>% 
+      mutate(n = map(value, nrow)) %>%
+      select(-value) %>% 
+      left_join(allpri, ., by = 'Priority') %>% 
+      mutate(
+        n = map(n, ~ ifelse(is.null(.x), 0, .x)),
+        n = map(n, as.character)
+        ) %>% 
+      deframe
+    names(cnts)[names(cnts) == 'Do nothing'] <- 'Donothing'
+
     return(cnts)
+    
+  })
+  
+  # type counts
+  output$typs <- reactive({
+    
+    # to join to get all types (for those with zero)
+    alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 12))), stringsAsFactors = F)
+
+    # get priority counts, join with allpri for all priority categories
+    typs <- scr_pri() %>% 
+      unnest %>% 
+      rename(Type = typelv) %>% 
+      group_by(Type) %>% 
+      nest %>% 
+      mutate(n = map(data, nrow)) %>%
+      select(-data) %>% 
+      left_join(alltyp, ., by = 'Type') %>% 
+      mutate(
+        n = map(n, ~ ifelse(is.null(.x), 0, .x)),
+        n = map(n, as.character)
+      ) %>% 
+      deframe
+    
+    return(typs)
     
   })
   
