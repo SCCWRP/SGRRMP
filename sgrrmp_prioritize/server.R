@@ -208,6 +208,81 @@ server <- function(input, output, session) {
     
   })
   
+  # all priority, type counts
+  allcnts <- reactive({
+    
+    # to join to get all priority categories (for those with zero)
+    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore', 'Do nothing'), stringsAsFactors = F)
+    
+    # to join to get all types (for those with zero)
+    alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 12))), stringsAsFactors = F)
+    
+    # get priority counts, join with allpri for all priority categories
+    out <- scr_pri() %>% 
+      unnest %>% 
+      rename(Type = typelv) %>% 
+      group_by(Priority, Type) %>% 
+      nest %>% 
+      mutate(n = map(data, nrow)) %>%
+      select(-data) %>% 
+      left_join(allpri, ., by = 'Priority') %>% 
+      group_by(Priority) %>% 
+      nest %>% 
+      mutate(data = map(data, ~ left_join(alltyp, .x, by = 'Type'))) %>% 
+      unnest %>% 
+      mutate(
+        n = map(n, ~ ifelse(is.null(.x), 0, .x))
+      )
+    
+    return(out)
+    
+  })
+  
+  # priority only counts, across typs
+  output$cnts <- reactive({
+
+    out <- allcnts() %>% 
+      select(Priority, n) %>% 
+      unnest %>% 
+      group_by(Priority) %>% 
+      summarise(n = sum(n)) %>% 
+      mutate(n = as.character(n)) %>% 
+      deframe %>% 
+      as.list
+    names(out)[names(out) == 'Do nothing'] <- 'Donothing'
+    
+    return(out)
+    
+  })
+  
+  # type only counts, across priorities
+  output$typs <- reactive({
+
+    out <- allcnts() %>% 
+      select(Type, n) %>% 
+      unnest %>% 
+      group_by(Type) %>% 
+      summarise(n = sum(n)) %>% 
+      mutate(n = as.character(n)) %>% 
+      deframe %>% 
+      as.list
+    
+    return(out)
+    
+  })
+  
+  # # type only counts, across priorities
+  # output$cnts_pro <- reactive({
+  #   browser()
+  #   out <- allcnts() %>% 
+  #     filter(Priority %in% 'Protect') %>% 
+  #     unnest %>% 
+  #     group_by(Type)
+  #   
+  #   return(out)
+  #   
+  # })
+  
   # the selection plot
   siteplo <- reactive({
     
@@ -419,53 +494,5 @@ server <- function(input, output, session) {
     combineWidgets(pri_pro, pri_mon, pri_res, pri_don)
 
   })
-
-  # priority counts
-  output$cnts <- reactive({
-
-    # to join to get all priority categories (for those with zero)
-    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore', 'Do nothing'), stringsAsFactors = F)
-    
-    # get priority counts, join with allpri for all priority categories
-    cnts <- scr_pri() %>% 
-      mutate(n = map(value, nrow)) %>%
-      select(-value) %>% 
-      left_join(allpri, ., by = 'Priority') %>% 
-      mutate(
-        n = map(n, ~ ifelse(is.null(.x), 0, .x)),
-        n = map(n, as.character)
-        ) %>% 
-      deframe
-    names(cnts)[names(cnts) == 'Do nothing'] <- 'Donothing'
-
-    return(cnts)
-    
-  })
-  
-  # type counts
-  output$typs <- reactive({
-    
-    # to join to get all types (for those with zero)
-    alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 12))), stringsAsFactors = F)
-
-    # get priority counts, join with allpri for all priority categories
-    typs <- scr_pri() %>% 
-      unnest %>% 
-      rename(Type = typelv) %>% 
-      group_by(Type) %>% 
-      nest %>% 
-      mutate(n = map(data, nrow)) %>%
-      select(-data) %>% 
-      left_join(alltyp, ., by = 'Type') %>% 
-      mutate(
-        n = map(n, ~ ifelse(is.null(.x), 0, .x)),
-        n = map(n, as.character)
-      ) %>% 
-      deframe
-    
-    return(typs)
-    
-  })
-  
    
 }

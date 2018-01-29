@@ -26,7 +26,7 @@ for(i in typi){
   typtxt <- c(typtxt, ctxt)
 }
 typtxt <- paste(typtxt, collapse = ', ') %>% 
-  paste('<h5>Site type counts:', ., '</h5>')
+  paste('<h4>Site type counts:', ., '</h4>')
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -241,7 +241,7 @@ shinyUI(fluidPage(
       column(width = 12,
              htmlWidgetOutput(
                outputId = 'cnts',
-               HTML('<h4>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore, <b><span id="Donothing"></span></b> do nothing</h4>')
+               HTML('<h3>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore, <b><span id="Donothing"></span></b> do nothing</h3>')
              )),
              
       # site type counts
@@ -254,7 +254,7 @@ shinyUI(fluidPage(
       # protect map
       column(width = 6,
 
-        h3('Protect'),
+        h3('Protect'), 
         leafletOutput('bs_pro', width = '100%', height = 550),
         h3()
 
