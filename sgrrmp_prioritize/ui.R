@@ -9,7 +9,7 @@ library(tidyverse)
 library(rvest)
 
 # column padding
-pad <- 'padding:4.1px;'
+pad <- 'padding:0px;'
 
 # last commit date
 dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>% 
@@ -45,7 +45,7 @@ shinyUI(fluidPage(
     column(width = 3, img(src = "logo.jpg", width = '200px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 9, 
-      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', dt)
+           h5('This application can be used to explore site prioritization for the San Gabriel River Watershed.  Site priorities are based on user selections for the twelve types of possible site classifications. The priority selections are plotted on the maps for all sites in the watershed.  Classifications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', dt)
     ),
 
     column(width = 12, 
@@ -158,7 +158,7 @@ shinyUI(fluidPage(
       # plot output
       column(width = 10,
              
-        plotOutput('plo_exp', width = '100%', height = 800)
+        plotOutput('plo_exp', width = '100%', height = 705)
              
       )
         
