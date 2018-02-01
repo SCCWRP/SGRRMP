@@ -347,6 +347,7 @@ server <- function(input, output, session) {
   output$plo_exp <- renderPlot({
 
     bysta <- input$bysta
+    nocon <- input$nocon
     
     # CSCI scores and expectations
     toplo1 <- scr_exp() %>% 
@@ -387,21 +388,40 @@ server <- function(input, output, session) {
       
     }
     
-    # plot
-    p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
-      geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
-      geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
-      theme_bw(base_family = 'serif', base_size = 18) +
-      theme(
-        axis.text.y = element_text(size = 10)
-      ) +
-      scale_x_continuous('CSCI') +
-      scale_y_discrete('Site') +
-      scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
-      geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.8) +
-      geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
-      scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
-
+    # bare bones plot if true
+    if(nocon){
+      
+      # plot
+      p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
+        theme_bw(base_family = 'serif', base_size = 18) +
+        theme(
+          axis.text.y = element_text(size = 10)
+        ) +
+        scale_x_continuous('CSCI') +
+        scale_y_discrete('Site') +
+        geom_point(aes(x = csci), fill = 'white', shape = 21, size = 4, alpha = 0.8) +
+        geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1)
+           
+    # otherwise full
+    } else {
+      
+      # plot
+      p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
+        geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
+        geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
+        theme_bw(base_family = 'serif', base_size = 18) +
+        theme(
+          axis.text.y = element_text(size = 10)
+        ) +
+        scale_x_continuous('CSCI') +
+        scale_y_discrete('Site') +
+        scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
+        geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.8) +
+        geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
+        scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
+      
+    }
+    
     print(p)
     
   })

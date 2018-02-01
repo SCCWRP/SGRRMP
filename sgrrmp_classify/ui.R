@@ -183,7 +183,7 @@ shinyUI(fluidPage(
         
       ),
         
-      column(width = 4,
+      column(width = 2,
              
         # order by site
         materialSwitch('bysta', 
@@ -194,6 +194,17 @@ shinyUI(fluidPage(
 
       ),
     
+      column(width = 2,
+             
+             # order by site
+             materialSwitch('nocon', 
+                            label = h6('No context:'), 
+                            status = 'primary',
+                            right = F
+             )
+             
+      ),
+      
       # plot output
       column(width = 12,
             
