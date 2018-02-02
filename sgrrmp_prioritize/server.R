@@ -293,7 +293,8 @@ server <- function(input, output, session) {
         panel.grid.minor = element_blank(), 
         axis.line.x = element_line(), 
         axis.line.y = element_line(), 
-        axis.ticks = element_line(), 
+        axis.ticks.y = element_line(), 
+        axis.text.x = element_blank(),
         legend.position = 'top'
       )
     

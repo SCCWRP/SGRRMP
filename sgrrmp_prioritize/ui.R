@@ -158,7 +158,7 @@ shinyUI(fluidPage(
       # plot output
       column(width = 10,
              
-        plotOutput('plo_exp', width = '100%', height = 705)
+        plotOutput('plo_exp', width = '100%', height = 690)
              
       )
         

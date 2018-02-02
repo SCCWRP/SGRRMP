@@ -358,6 +358,7 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely un
     left_join(lbs, ., by = c('strcls', 'perf', 'typeoc', 'typelv')) %>% 
     mutate(
       Sites = ifelse(is.na(Sites), 0, Sites), 
+      Sites = as.numeric(Sites),
       typelv = factor(typelv, levels = lvs)
     ) %>% 
     arrange(`typelv`) %>%
@@ -367,7 +368,10 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely un
       `Observed score` = typeoc,
       Type = typelv
     ) %>%
-    mutate(Type = gsub('^Type|^Type0', '', Type)) %>% 
+    mutate(
+      Type = gsub('^Type|^Type0', '', Type),
+      Type = as.numeric(Type)
+      ) %>% 
     dplyr::select(`Reach expectation`, `Site performance`, `Observed score`, Type, Sites)
   
   return(totab)
