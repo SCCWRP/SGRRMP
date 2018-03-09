@@ -28,7 +28,7 @@ shinyUI(fluidPage(
   
   fluidRow(
   
-    column(width = 3, img(src = "logo.jpg", width = '200px'), align = 'center', style = "margin-top: 0px;"),
+    column(width = 3, img(src = "logo.jpg", width = '300px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 9, 
       h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', dt)

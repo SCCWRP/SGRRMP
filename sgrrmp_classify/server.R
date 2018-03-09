@@ -6,6 +6,7 @@ library(stringr)
 library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
+library(RColorBrewer)
 source('R/funcs.R')
 
 # spatial comid data
@@ -47,23 +48,25 @@ pal_difr <- colorNumeric(
 
 # color palette for stream expectations
 pal_exp <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(2, 3, 1)],
+  palette = brewer.pal(9, 'Paired')[c(2, 1, 5, 6)],
   na.color = 'yellow',
-  levels = c('likely unconstrained', 'undetermined', 'likely constrained'))
+  levels = c('likely unconstrained', 'possibly unconstrained', 'possibly constrained', 'likely constrained'))
 
-# color palette for CSCI performance
+# color palette for CSCI scoring performance
 pal_prf <- colorFactor(
   palette = c(
-    RColorBrewer::brewer.pal(9, 'Blues')[c(9, 6, 3)],
-    RColorBrewer::brewer.pal(9, 'Greens')[c(9, 6, 3)],
-    RColorBrewer::brewer.pal(9, 'Reds')[c(9, 6, 3)]
-    ),
+    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(90, 74, 58)],
+    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(42, 26, 10)],
+    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(42, 26, 10)],
+    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(90, 74, 58)]
+  ),
   na.color = 'yellow',
   levels = c(
-    'over performing (lu)', 'expected (lu)', 'under performing (lu)',
-    'over performing (u)', 'expected (u)','under performing (u)',  
-    'over performing (lc)', 'expected (lc)', 'under performing (lc)')
-  )
+    'over scoring (lu)', 'expected (lu)', 'under scoring (lu)',
+    'over scoring (pu)', 'expected (pu)', 'under scoring (pu)',
+    'over scoring (pc)', 'expected (pc)', 'under scoring (pc)',
+    'over scoring (lc)', 'expected (lc)', 'under scoring (lc)')
+)
 
 # server logic
 server <- function(input, output, session) {
