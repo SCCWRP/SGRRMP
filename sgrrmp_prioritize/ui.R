@@ -6,6 +6,7 @@ library(shinydashboard)
 library(shinyWidgets)
 library(ShinyDash)
 library(tidyverse)
+library(mapview)
 library(rvest)
 
 # column padding
@@ -19,7 +20,7 @@ dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>%
   gsub('^.*Commits on (.*)\\n.*$', '\\1', .)
 
 # html text for type counts
-typi <- paste0('Type', sprintf('%02d', seq(1, 12)))
+typi <- paste0('Type', sprintf('%02d', seq(1, 16)))
 typtxt <- NULL
 for(i in typi){
   ctxt <- paste0('<b><span id="', i, '"></span></b> ', i)
@@ -68,97 +69,125 @@ shinyUI(fluidPage(
       # site priority selectors             
       column(width = 2, 
 
-        div(style = 'padding:12px;'),
+        div(style = 'padding:11px;'),
         
         div(style = pad,
-               pickerInput(inputId = "Site 1", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'),
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 1", label = NULL, choices = c('Monitor', 'Protect', 'Restore'),
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Monitor', 'Protect'),  
                            multiple = TRUE
                )
         ), 
                     
         div(style = pad,
-               pickerInput(inputId = "Site 2", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                          options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 2", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                          options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),  
                           multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 3", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"), 
+               pickerInput(inputId = "Site 3", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Monitor'), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 4", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 4", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Monitor', 'Restore'),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 5", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 5", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
                pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Monitor', 'Restore'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 7", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"), 
+               pickerInput(inputId = "Site 7", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'), 
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 8", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 8", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Monitor', 'Restore'),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 9", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 9", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 10", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 10", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 11", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 11", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),  
                            multiple = TRUE
                )
         ), 
         
         div(style = pad,
-               pickerInput(inputId = "Site 12", label = NULL, choices = c('Protect', 'Monitor', 'Restore', 'Do nothing'), 
-                           options = list(`actions-box` = TRUE, size = 20, `none-selected-text` = "Do nothing"),  
+               pickerInput(inputId = "Site 12", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                           options = list(`actions-box` = TRUE, size = 20), selected = c('Monitor', 'Restore'),  
                            multiple = TRUE
                )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site 13", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                        options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),  
+                        multiple = TRUE
+            )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site 14", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                        options = list(`actions-box` = TRUE, size = 20), selected = c('Monitor', 'Restore'),  
+                        multiple = TRUE
+            )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site 15", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                        options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),  
+                        multiple = TRUE
+            )
+        ), 
+        
+        div(style = pad,
+               pickerInput(inputId = "Site 16", label = NULL, choices = c('Monitor', 'Protect', 'Restore'), 
+                        options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),  
+                        multiple = TRUE
+            )
         )
         
       ),
       # plot output
       column(width = 10,
              
-        plotOutput('plo_exp', width = '100%', height = 690)
+        plotOutput('plo_exp', width = '100%', height = 900)
              
       )
         
@@ -241,7 +270,7 @@ shinyUI(fluidPage(
       column(width = 12,
              htmlWidgetOutput(
                outputId = 'cnts',
-               HTML('<h3>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore, <b><span id="Donothing"></span></b> do nothing</h3>')
+               HTML('<h3>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Monitor"></span></b> monitor, <b><span id="Restore"></span></b> restore</h3>')
              )),
              
       # site type counts
@@ -251,8 +280,17 @@ shinyUI(fluidPage(
                HTML(typtxt)
              )),
       
+      # monitor map
+      column(width = 4,
+             
+             h3('Monitor'), 
+             leafletOutput('bs_mon', width = '100%', height = 550),
+             h3()
+             
+      ),
+      
       # protect map
-      column(width = 6,
+      column(width = 4,
 
         h3('Protect'), 
         leafletOutput('bs_pro', width = '100%', height = 550),
@@ -260,29 +298,11 @@ shinyUI(fluidPage(
 
       ),
       
-      # monitor map
-      column(width = 6,
-        
-        h3('Monitor'), 
-        leafletOutput('bs_mon', width = '100%', height = 550),
-        h3()
-
-      ),
-      
       # restore map
-      column(width = 6,
+      column(width = 4,
           
         h3('Restore'),
         leafletOutput('bs_res', width = '100%', height = 550),
-        h3()
-             
-      ),
-      
-      # do nothing map
-      column(width = 6,
-             
-        h3('Do nothing'),
-        leafletOutput('bs_don', width = '100%', height = 550),
         h3()
              
       )

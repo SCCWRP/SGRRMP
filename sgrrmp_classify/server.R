@@ -2,6 +2,7 @@ library(shiny)
 library(sf)
 library(tidyverse)
 library(leaflet)
+library(mapview)
 library(stringr)
 library(scales)
 library(leaflet.minicharts)
@@ -14,6 +15,14 @@ load('data/spat.RData')
 
 # csci scores at sites
 load('data/scrs.RData')
+
+# base mapview
+scrs_mv <- scrs %>% 
+  st_as_sf(coords = c('long', 'lat')) %>% 
+  st_set_crs(prj) %>% 
+  mapview(layer.name = 'reset') %>% 
+  .@map %>% 
+  syncWith('maps')
 
 # color domain, csci scores and expectations
 dmn <- spat %>% 
@@ -246,25 +255,11 @@ server <- function(input, output, session) {
   })
   
   # non-reactive base map
-  output$map <- renderLeaflet(
-    
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron) %>% 
-      syncWith('maps')
-    
-  )
+  output$map <- renderLeaflet(scrs_mv)
   
   # non-reactive base map, condition expectations
-  output$map_exp <- renderLeaflet(
-    
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>% 
-      addProviderTiles(providers$CartoDB.Positron) %>% 
-      syncWith('maps')
-    
-  )
-  
+  output$map_exp <- renderLeaflet(scrs_mv)
+
   ##
   # reactive maps
   observe({

@@ -2,12 +2,16 @@ library(shiny)
 library(sf)
 library(tidyverse)
 library(leaflet)
+library(mapview)
 library(stringr)
 library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
 library(gridExtra)
+library(RColorBrewer)
 source('R/funcs.R')
+
+prj <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 
 # spatial comid data
 load('data/spat.RData')
@@ -15,41 +19,51 @@ load('data/spat.RData')
 # csci scores at sites
 load('data/scrs.RData')
 
-sts <- paste('Site', seq(1:12))
+# base mapview
+scrs_mv <- scrs %>% 
+  st_as_sf(coords = c('long', 'lat')) %>% 
+  st_set_crs(prj) %>% 
+  mapview(layer.name = 'reset') %>% 
+  .@map %>% 
+  syncWith('maps')
+
+sts <- paste('Site', seq(1:16))
 
 # example data, csci scores
 scrs_ex <- data.frame(
   Site = factor(sts, levels = sts),
-  csci = c(1.25, 1, 0.81, 0.7, 1.1, 0.9, 0.75, 0.5, 0.84, 0.75, 0.55, 0.4)
+  csci = c(1.25, 0.98, 0.81, 0.68, 1.14, 0.87, 0.73, 0.58, 0.98, 0.83, 0.68, 0.5, 0.88, 0.76, 0.57, 0.39)
 )
 
 # example data, stream predictions
 exps_ex <- data.frame(
   Site = factor(sts, levels = sts),
-  minv = rep(c(0.84, 0.68, 0.43), each = 4),
-  maxv = rep(c(1.14, 0.98, 0.73), each = 4), 
+  minv = rep(c(0.84, 0.68, 0.58, 0.43), each = 4),
+  maxv = rep(c(1.14, 0.98, 0.88, 0.73), each = 4),
   stringsAsFactors = F
-)
+  ) 
 
 # color palette for stream expectations
 pal_exp <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Set1')[c(2, 3, 1)],
+  palette = brewer.pal(9, 'Paired')[c(2, 1, 5, 6)],
   na.color = 'yellow',
-  levels = c('likely unconstrained', 'undetermined', 'likely constrained'))
+  levels = c('likely unconstrained', 'possibly unconstrained', 'possibly constrained', 'likely constrained'))
 
-# color palette for CSCI performance
+# color palette for CSCI scoring performance
 pal_prf <- colorFactor(
   palette = c(
-    RColorBrewer::brewer.pal(9, 'Blues')[c(9, 6, 3)],
-    RColorBrewer::brewer.pal(9, 'Greens')[c(9, 6, 3)],
-    RColorBrewer::brewer.pal(9, 'Reds')[c(9, 6, 3)]
-    ),
+    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(90, 74, 58)],
+    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(42, 26, 10)],
+    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(42, 26, 10)],
+    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(90, 74, 58)]
+  ),
   na.color = 'yellow',
   levels = c(
-    'over performing (lu)', 'expected (lu)', 'under performing (lu)',
-    'over performing (u)', 'expected (u)','under performing (u)',  
-    'over performing (lc)', 'expected (lc)', 'under performing (lc)')
-  )
+    'over scoring (lu)', 'expected (lu)', 'under scoring (lu)',
+    'over scoring (pu)', 'expected (pu)', 'under scoring (pu)',
+    'over scoring (pc)', 'expected (pc)', 'under scoring (pc)',
+    'over scoring (lc)', 'expected (lc)', 'under scoring (lc)')
+)
 
 # color palette for stream expectations
 pal_pri <- colorFactor(
@@ -61,7 +75,7 @@ pal_pri <- colorFactor(
 pal_typ <- colorFactor(
   palette = RColorBrewer::brewer.pal(11, 'Spectral'),#hue_pal()(100), 
   na.color = 'yellow',
-  domain = paste0('Type', sprintf('%02d', seq(1:12)))
+  domain = paste0('Type', sprintf('%02d', seq(1:16)))
 )
 
 # server logic
@@ -212,10 +226,10 @@ server <- function(input, output, session) {
   allcnts <- reactive({
     
     # to join to get all priority categories (for those with zero)
-    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore', 'Do nothing'), stringsAsFactors = F)
+    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore'), stringsAsFactors = F)
     
     # to join to get all types (for those with zero)
-    alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 12))), stringsAsFactors = F)
+    alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 16))), stringsAsFactors = F)
     
     # get priority counts, join with allpri for all priority categories
     out <- scr_pri() %>% 
@@ -249,7 +263,6 @@ server <- function(input, output, session) {
       mutate(n = as.character(n)) %>% 
       deframe %>% 
       as.list
-    names(out)[names(out) == 'Do nothing'] <- 'Donothing'
     
     return(out)
     
@@ -333,46 +346,15 @@ server <- function(input, output, session) {
     siteplo()[[2]]
   })
   
-  # non-reactive base map, do nothing priority
-  output$bs_don <- renderLeaflet(
-
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
-
-  )
-
   # non-reactive base map, protect priority
-  output$bs_pro <- renderLeaflet(
-
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
-
-  )
+  output$bs_pro <- renderLeaflet(scrs_mv)
 
   # non-reactive base map, monitor priority
-  output$bs_mon <- renderLeaflet(
-    
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
-    
-  )
+  output$bs_mon <- renderLeaflet(scrs_mv)
   
   # non-reactive base map, restore priority
-  output$bs_res <- renderLeaflet(
+  output$bs_res <- renderLeaflet(scrs_mv)
     
-    leaflet(scrs) %>%
-      fitBounds(~min(long), ~min(lat), ~max(long), ~max(lat)) %>%
-      addProviderTiles(providers$CartoDB.Positron) %>%
-      syncWith('maps')
-    
-  )
-  
   ##
   # reactive maps
   observe({
@@ -389,7 +371,6 @@ server <- function(input, output, session) {
     dat_pro <- filter(scr_pri, Priority %in% 'Protect')$value
     dat_mon <- filter(scr_pri, Priority %in% 'Monitor')$value
     dat_res <- filter(scr_pri, Priority %in% 'Restore')$value
-    dat_don <- filter(scr_pri, Priority %in% 'Do nothing')$value
     
     # base protect map
     pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
@@ -421,16 +402,6 @@ server <- function(input, output, session) {
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste0(COMID, ', Stream class:', strcls)
       )
-    
-    # base do nothing map
-    pri_don <- leafletProxy("bs_don", data = dat_exp) %>%
-      clearMarkers() %>%
-      clearShapes() %>%
-      clearControls() %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
-                   label = ~paste0(COMID, ', Stream class:', strcls)
-      )
-    
     
     # add protect points if not empty
     if(length(dat_pro) > 0){
@@ -476,23 +447,8 @@ server <- function(input, output, session) {
         )
     }
     
-    # add do nothing points if not empty
-    if(length(dat_don) > 0){
-      
-      pri_don <- pri_don %>% 
-        addCircleMarkers(data = dat_don[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
-                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
-                         fillColor = ~pal_typ(typelv), color = 'black'
-        ) %>% 
-        addLegend("topright", pal = pal_typ, values = dat_don[[1]]$typelv,
-                            title = "Site type (points)",
-                            opacity = 1
-                  )
-
-    }
-    
     # sync the maps
-    combineWidgets(pri_pro, pri_mon, pri_res, pri_don)
+    combineWidgets(pri_pro, pri_mon, pri_res)
 
   })
    

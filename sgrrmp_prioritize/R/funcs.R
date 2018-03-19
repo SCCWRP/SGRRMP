@@ -7,7 +7,7 @@ g_legend <- function(a.gplot){
   return(legend)}
 
 #' Get biological expectation with changing threshold and likelihoods, same as getcls but only returns class designation
-plot_strcls <- function(datin, thrsh = 0.79, tails = 0.05, lbs = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2)){
+plot_strcls <- function(datin, thrsh = 0.79, tails = 0.05, lbs = list('likely unconstrained' = 0, 'possibly unconstrained' = 1, 'possibly constrained' = 2, 'likely constrained' = 3)){
   
   # sanity check
   if(tails > 0.5)
@@ -24,14 +24,14 @@ plot_strcls <- function(datin, thrsh = 0.79, tails = 0.05, lbs = list('likely un
           val = seq(x$val[1], x$val[2], length = 19), 
           qts = round(seq(0.05, 0.95, by = 0.05), 2)
         )
-        
+
         # get quantile labels to filter
         lovl <- round(tails, 2)
         hivl <- round(1 - tails, 2)
         
         # filter by quantile labels and median
         rngs <- tofilt %>% 
-          filter(qts %in% c(lovl, hivl))
+          filter(qts %in% c(lovl, 0.5, hivl))
         
         return(rngs)
         
@@ -39,8 +39,7 @@ plot_strcls <- function(datin, thrsh = 0.79, tails = 0.05, lbs = list('likely un
       strcls_int = map(datcut, function(x){
         
         # get threshold range
-        rngs <- x$val %>% 
-          range
+        rngs <- x$val
         
         # find if above/below or covering thrsh
         cls <- findInterval(thrsh, rngs)
@@ -68,7 +67,7 @@ plot_strcls <- function(datin, thrsh = 0.79, tails = 0.05, lbs = list('likely un
 }
 
 #' Get CSCI StationCode expectations and performance classication
-plot_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over performing' = 2, 'expected' = 1, 'under performing' = 0),
+plot_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over scoring' = 2, 'expected' = 1, 'under scoring' = 0),
                      ...
 ){
   
@@ -83,7 +82,7 @@ plot_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over p
       perf = pmap(list(datcut, csci), function(datcut, csci){
         
         # within datcut interval
-        prf <- findInterval(csci, datcut$val)
+        prf <- findInterval(csci, range(datcut$val))
         
         return(prf)
         
@@ -121,7 +120,7 @@ plot_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over p
 #' @param tails numeric for tails to truncate expectations for overlap with thrsh
 #' @param obs_sc logical if observed score text qualifiers are returned
 #' @param get_cds logical indicating if three level codes as list is returned
-#' @details  The three level codes for type are (0, 1, 2), (0, 1, 2), and (0, 1).  The first level is likely unconstrained (0), undetermined (1), and likely constrained (2); the second level is under-performing (0), as expected (1), and over-performing (2); the third level is below threshold (0) and above threshold (1)
+#' @details  The three level codes for type are (0, 1, 2, 3), (0, 1, 2), and (0, 1).  The first level is likely unconstrained (0), possibly unconstrained (1), possibly constrained (2), likely constrianed (3); the second level is under-scoring (0), as expected (1), and over-scoring (2); the third level is below threshold (0) and above threshold (1)
 typ_lbs <- function(vec = NULL, thrsh = 0.79, tails = 0.05, obs_sc = FALSE, get_cds = FALSE){
   
   # type labels from codes in vec
@@ -135,9 +134,13 @@ typ_lbs <- function(vec = NULL, thrsh = 0.79, tails = 0.05, obs_sc = FALSE, get_
     Type07 = '1_1_0',  
     Type08 = '1_0_0',
     Type09 = '2_2_1',
-    Type10 = '2_2_0',
+    Type10 = '2_1_1',
     Type11 = '2_1_0',
-    Type12 = '2_0_0'
+    Type12 = '2_0_0',
+    Type13 = '3_2_1',
+    Type14 = '3_2_0', 
+    Type15 = '3_1_0', 
+    Type16 = '3_0_0'
   )
   
   if(get_cds) return(lbs)
@@ -174,10 +177,14 @@ typ_lbs <- function(vec = NULL, thrsh = 0.79, tails = 0.05, obs_sc = FALSE, get_
     Type06 = paste(thrsh, 'to', vls[2]),
     Type07 = paste(vls[1], 'to', thrsh), 
     Type08 = paste('<', vls[1]),
-    Type09 = paste('>=', thrsh),
-    Type10 = paste(vls[2], 'to', thrsh),
-    Type11 = paste(vls[1], 'to', vls[2]),
-    Type12 = paste('<', vls[1])
+    Type09 = paste('>=', vls[2]),
+    Type10 = paste(thrsh, 'to', vls[2]),
+    Type11 = paste(vls[1], 'to', thrsh), 
+    Type12 = paste('<', vls[1]),
+    Type13 = paste('>=', thrsh),
+    Type14 = paste(vls[2], 'to', thrsh),
+    Type15 = paste(vls[1], 'to', vls[2]),
+    Type16 = paste('<', vls[1])
   ) %>% 
     enframe('vec', 'obs_sc') %>% 
     unnest
@@ -195,9 +202,10 @@ typ_lbs <- function(vec = NULL, thrsh = 0.79, tails = 0.05, obs_sc = FALSE, get_
 
 #' Get performance multi classifications
 #' Input is scr_exp() reactive from app
-get_perf_mlt <- function(scr_exp, lbs = c('over performing (lu)', 'expected (lu)', 'under performing (lu)',
-                                          'over performing (u)', 'expected (u)', 'under performing (u)',
-                                          'over performing (lc)', 'expected (lc)', 'under performing (lc)')
+get_perf_mlt <- function(scr_exp, lbs = c('over scoring (lu)', 'expected (lu)', 'under scoring (lu)',
+                                          'over scoring (pu)', 'expected (pu)', 'under scoring (pu)',
+                                          'over scoring (pc)', 'expected (pc)', 'under scoring (pc)',
+                                          'over scoring (lc)', 'expected (lc)', 'under scoring (lc)')
 ){
   
   # format perf_mlt as column combos of perf and strcls
@@ -233,19 +241,20 @@ get_perf_mlt <- function(scr_exp, lbs = c('over performing (lu)', 'expected (lu)
   # reassign factor levels
   out <- out %>% 
     mutate(perf_mlt = factor(perf_mlt, levels = lbs2))
-  
+   
   return(out)
   
 }
 
 # master funcion that classifies everything using only thrsh and tails
 proc_all <- function(datin, scrs, thrsh, tails){
-  
+
   out <- plot_exp(datin, scrs, thrsh = thrsh, tails = tails) %>% 
     get_perf_mlt %>% 
     mutate(datcut = map(datcut, function(x){
-      
+ 
       out <- x %>% 
+        filter(qts != 0.5) %>% 
         mutate(lev = c('minv_qt', 'maxv_qt')) %>% 
         dplyr::select(-qts) %>% 
         spread(lev, val)
@@ -272,9 +281,9 @@ proc_all <- function(datin, scrs, thrsh, tails){
 #' @param thrsh numeric for CSCI scoring thresholds
 #' @param tails numeric for tails to truncate expectations for overlap with thrsh
 #' @param obs_sc logical if observed score text qualifiers are returned
-#' @param lbs_str chr string labels for stream comid expectation as likely constrained, undetermind, and likely unconstrained
-#' @param lbs_sta chr string labels for site/station performance as over, expected, or under performing
-get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2), lbs_sta = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){ 
+#' @param lbs_str chr string labels for stream comid expectation as likely constrained, possibly constrained, possibly unconstrained, or likely unconstrained
+#' @param lbs_sta chr string labels for site/station performance as over, expected, or under scoring
+get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely unconstrained' = 0, 'possibly unconstrained' = 1, 'possibly constrained' = 2, 'likely constrained' = 3), lbs_sta = list('over scoring' = 2, 'expected' = 1, 'under scoring' = 0)){ 
   
   # typeoc labels
   typeoc <- typ_lbs(get_cds = T) %>% 
@@ -310,6 +319,7 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely un
     left_join(lbs, ., by = c('strcls', 'perf', 'typeoc', 'typelv')) %>% 
     mutate(
       Sites = ifelse(is.na(Sites), 0, Sites), 
+      Sites = as.numeric(Sites),
       typelv = factor(typelv, levels = lvs)
     ) %>% 
     arrange(`typelv`) %>%
@@ -319,7 +329,10 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely un
       `Observed score` = typeoc,
       Type = typelv
     ) %>%
-    mutate(Type = gsub('^Type|^Type0', '', Type)) %>% 
+    mutate(
+      Type = gsub('^Type|^Type0', '', Type),
+      Type = as.numeric(Type)
+    ) %>% 
     dplyr::select(`Reach expectation`, `Site performance`, `Observed score`, Type, Sites)
   
   return(totab)
@@ -335,7 +348,7 @@ get_tab <- function(datin, thrsh = 0.79, tails = 0.05, lbs_str = list('likely un
 #' @param lbs chr string labels for interval classifications
 #' 
 #' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
-getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2)){
+getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'possibly unconstrained' = 1, 'possibly constrained' = 2, 'likely constrained' = 3)){
   
   # sanity check
   if(tails >= 0.5)
@@ -358,7 +371,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
         # get quantile labels to filter
         lovl <- 100 * tails
         hivl <- 100 * (1 -  tails) 
-        vls <- c(lovl, hivl) %>% 
+        vls <- c(lovl, 50, hivl) %>% 
           str_pad(2, pad = '0') %>% 
           paste0(modls, '0.', .)
         
@@ -367,7 +380,6 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
           filter(var %in% vls)
         
         return(x)
-        
         
       }),
       
@@ -382,12 +394,8 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
           
         } 
         
-        # get threshold range
-        rngs <- x$val %>% 
-          range
-        
         # find if above/below or covering thrsh
-        cls <- findInterval(thrsh, rngs)
+        cls <- findInterval(thrsh, x$val)
         
         return(cls)
         
@@ -423,7 +431,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
 #' @param lbs chr string labels for interval classifications
 #' 
 #' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
-getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2)){
+getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'possibly unconstrained' = 1, 'possibly constrained' = 2, 'likely constrained' = 3)){
   
   # sanity check
   if(tails >= 0.5)
@@ -454,17 +462,16 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
         # get quantile labels to filter
         lovl <- 100 * tails
         hivl <- 100 * (1 -  tails) 
-        vls <- c(lovl, hivl) %>% 
+        vls <- c(lovl, 50, hivl) %>% 
           str_pad(2, pad = '0') %>% 
           paste0(modls, '0.', .)
         
         # filter by quantile labels and median
-        rngs <- x %>% 
+        ints <- x %>% 
           filter(var %in% vls) %>% 
-          .$val %>% 
-          range
+          .$val 
         
-        cls <- findInterval(thrsh, rngs)
+        cls <- findInterval(thrsh, ints)
         
         return(cls)
         
@@ -496,10 +503,10 @@ getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full')
 #' @param scrs CSCI scores by COMID and StationCode
 #' @param thrsh numeric for CSCI scoring thresholds
 #' @param tails numeric for tails to truncate expectations for overlap with thrsh
-#' @param lbs chr string labels for site performance as over, expected, or under performing
+#' @param lbs chr string labels for site performance as over, expected, or under scoring
 #' @param ... additional arguments passed to getcls
 #' 
-site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over performing' = 2, 'expected' = 1, 'under performing' = 0),
+site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over scoring' = 2, 'expected' = 1, 'under scoring' = 0),
                      ...
 ){
   
@@ -532,7 +539,7 @@ site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over p
         } 
         
         # within datcut interval
-        prf <- findInterval(csci, datcut$val)
+        prf <- findInterval(csci, range(datcut$val))
         
         return(prf)
         
@@ -560,96 +567,6 @@ site_exp <- function(datin, scrs, thrsh = 0.79, tails = 0.05, lbs = list('over p
     mutate(perf = factor(perf, levels = unlist(lbs), labels = names(lbs)))
   
   return(incl)
-  
-}
-
-
-#' Summarize data from site_exp by counts and all types, used for table in app
-#'
-#' @param datin output data.frame from site_exp
-#' @param scr_pri Prioritized sites, by 
-#' @param thrsh numeric for CSCI scoring thresholds
-#' @param tails numeric for tails to truncate expectations for overlap with thrsh
-#' @param obs_sc logical if observed score text qualifiers are returned
-#' @param lbs_str chr string labels for stream comid expectation as likely constrained, undetermind, and likely unconstrained
-#' @param lbs_sta chr string labels for site/station performance as over, expected, or under performing
-get_tab <- function(datin, scr_pri, thrsh = 0.79, tails = 0.05, lbs_str = list('likely unconstrained' = 0, 'undetermined' = 1, 'likely constrained' = 2), lbs_sta = list('over performing' = 2, 'expected' = 1, 'under performing' = 0)){ 
-  
-  # typeoc labels
-  typeoc <- typ_lbs(get_cds = T) %>% 
-    unlist %>% 
-    typ_lbs(., thrsh = thrsh, tails = tails, obs_sc = T)
-  
-  # type labels from codes
-  lbs <- typ_lbs(get_cds = T) %>%
-    enframe('typelv', 'codes') %>%
-    unnest %>%
-    separate(codes, c('strcls', 'perf', 'thrsh'), sep = '_', remove = FALSE) %>% 
-    mutate(
-      typelv = factor(typelv, levels = typelv),
-      strcls = factor(strcls, levels = unlist(lbs_str), labels = names(lbs_str)),
-      perf = factor(perf, levels = unlist(lbs_sta), labels = names(lbs_sta))
-    ) %>% 
-    mutate(typeoc = typeoc) %>% 
-    dplyr::select(-codes, -thrsh) %>% 
-    mutate(
-      torm = map(strcls, function(chr){
-        
-        if(!is.na(chr)){
-          as.character(chr) %>% 
-            strsplit(., ' ') %>% 
-            lapply(function(x) substr(x, 1, 1) %>% paste(collapse = '') %>% paste0('(', ., ')')) %>% 
-            .[[1]]
-        } else {
-          NA
-        }
-        
-      }),
-      torm = unlist(torm)
-    ) %>% 
-    unite('perf_mlt', perf, torm, sep = ' ', remove = F) %>% 
-    mutate(perf_mlt = ifelse(grepl('^NA|NA$', perf_mlt), NA, perf_mlt)) %>% 
-    select(typelv, perf_mlt, typeoc)
-  
-  # get type levels and convert all to character
-  lvs <- levels(lbs$typelv)
-  lbs <- lbs %>% 
-    mutate_all(as.character)
-  
-  # types from observed data, join with complete table
-  totab <- datin %>%
-    dplyr::select(perf_mlt, typeoc, typelv) %>%
-    group_by(perf_mlt, typeoc, typelv) %>%
-    summarise(Sites = n()) %>%
-    na.omit %>%
-    ungroup %>% 
-    mutate_all(as.character) %>% 
-    left_join(lbs, ., by = c('perf_mlt', 'typeoc', 'typelv')) %>% 
-    mutate(
-      Sites = ifelse(is.na(Sites), 0 , Sites)
-    ) %>% 
-    arrange(`typelv`) %>%
-    rename(
-      `Observed score` = typeoc
-    ) %>%
-    dplyr::select(perf_mlt, `Observed score`, typelv, Sites)
-  
-  # join with priorities
-  out <- scr_pri %>% 
-    mutate(perf_mlt = as.character(perf_mlt)) %>% 
-    group_by(Priority, typelv, perf_mlt) %>%
-    summarise(n = length(Priority)) %>%
-    na.omit() %>% 
-    left_join(totab, ., by = c('typelv', 'perf_mlt')) %>% 
-    mutate(
-      Type = factor(typelv, levels = lvs),
-      Type = gsub('^Type|^Type0', '', Type)
-      ) %>% 
-    select(Type, Priority, perf_mlt, `Observed score`, Sites) %>% 
-    rename('Relative\nperformance' = perf_mlt) %>% 
-    ungroup
- 
-  return(out)
   
 }
 
@@ -681,7 +598,11 @@ get_pri_inp <- function(input, plot_ex, scr_exp_map){
     `Site 9` = input$`Site 9`,
     `Site 10` = input$`Site 10`,
     `Site 11` = input$`Site 11`,
-    `Site 12` = input$`Site 12`
+    `Site 12` = input$`Site 12`,
+    `Site 13` = input$`Site 13`,
+    `Site 14` = input$`Site 14`,
+    `Site 15` = input$`Site 15`,
+    `Site 16` = input$`Site 16`
     ) %>% 
     enframe('Site', 'Priority') %>%
     mutate(Priority = map(Priority, ~ ifelse(is.null(.x), 'Do nothing', .x))) %>%
