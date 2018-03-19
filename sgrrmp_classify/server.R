@@ -10,6 +10,8 @@ library(manipulateWidget)
 library(RColorBrewer)
 source('R/funcs.R')
 
+prj <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
+
 # spatial comid data
 load('data/spat.RData')
 
