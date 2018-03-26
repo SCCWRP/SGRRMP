@@ -366,6 +366,12 @@ server <- function(input, output, session) {
       unnest %>% 
       mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
       rename(`Stream Class` = strcls)
+    
+    # median expectation
+    toplo3 <- scr_exp() %>%
+      select(COMID, StationCode, datcut) %>% 
+      unnest %>% 
+      filter(grepl('0\\.50$', var))
 
     # arrange by station if true
     if(bysta){
@@ -409,6 +415,7 @@ server <- function(input, output, session) {
       p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
         geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
         geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
+        geom_point(data = toplo3, colour = 'white', size = 1, alpha = 1, shape = 15) +
         theme_bw(base_family = 'serif', base_size = 18) +
         theme(
           axis.text.y = element_text(size = 10)
@@ -434,6 +441,6 @@ server <- function(input, output, session) {
       
     return(totab)
       
-  }, rownames = F, options = list(dom = 't', pageLength = 12))
+  }, rownames = F, options = list(dom = 't', pageLength = 16))
    
 }

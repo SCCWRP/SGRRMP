@@ -22,7 +22,7 @@ shinyUI(fluidPage(
   useShinyCustom(slider_delay = '1500'),
   
   # Application title
-  h1('Stream classification in the San Gabriel River Watershed', 
+  h1('Landscape constraints on stream biological integrity in the San Gabriel River Watershed', 
      style = "font-family: 'Volkhov';
         font-weight: 500; line-height: 1.1"),
   
@@ -31,7 +31,7 @@ shinyUI(fluidPage(
     column(width = 3, img(src = "logo.jpg", width = '300px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 9, 
-      h5('This application can be used to explore stream and site classifications for the San Gabriel River Watershed.  Classications are based on the relationship of field CSCI scores at a site to biological expectations for the stream reach.  Expectations are based on user-defined parameters for CSCI thresholds and confidence in the biological expectation. Site classifications for CSCI scores are defined as over-performing, expected, and under-performing.  Stream reach expectations are defined as likely constrained, undetermined, or likely unconstrained. Last updated:', dt)
+      h5('This application can be used to explore landscape constraints on biological integrity of streams in the San Gabriel River Watershed.  The application provides context for evaluating stream health by estimating an expectation of biological condition at a given stream reach relative to landscape drivers. The process begins by identifying stream classifications and expectations from user-defined parameters for CSCI thresholds and confidence in the biological expectation. Stream classifications of expected biological constraints are defined as likely unconstrained, possibly unconstrained, possibly constrained, and likely constrained.  Observed CSCI scores at a site are then characterized relative to the reach expectations as over-scoring, expected, or under-scoring.  Site performance relative to the expectation can be used to recommend priorities for management actions. Last updated:', dt)
     ),
 
     column(width = 12, 
@@ -44,11 +44,11 @@ shinyUI(fluidPage(
     
     tabPanel('Maps',
 
-      h5('These two maps show stream reach classifications by COMID and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted CSCI score for a COMID and measured CSCI score at a station from from field data.  The', strong('right map'), 'shows the CSCI score expectation for a COMID and the site classification (or performance) of a monitoring station.'),   
+      h5('These two maps show stream reach classifications and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted CSCI score for a reach and measured CSCI score at a station from from field data.  The', strong('right map'), 'shows the CSCI score expectation for a reach and the site performance at a station relative to the expectation. See the plot tab for more details on how expectations and performance are determined.'),   
 
       column(width = 12, 
              
-        h5('These sliders control the aesthetics in both maps. Use them to change the point/line sizes and apply a jitter for repeat visits as the same station.  The average CSCI across all samples at a size is shown if jitter is set to zero.'), 
+        h5('These sliders control the aesthetics in both maps. Use them to change the point/line sizes and apply a jitter for repeat visits as the same station.  The average CSCI across all samples at a site is shown if jitter is set to zero.'), 
         
         # select point radius
         column(width = 4,
@@ -94,7 +94,7 @@ shinyUI(fluidPage(
          
       column(width = 6, 
         
-        h5('The toggle switch for the', strong('left map'), 'controls how the CSCI scores at the stations (points) are displayed.  The observed scores from field samples are shown when the switch is off and the differences between the observed scores and the stream reach predictions are shown when the switch is on.'),      
+        h5('The toggle switch for the', strong('left map'), 'controls how the CSCI scores at the stations (points) are displayed.  The observed scores from field samples are shown when the switch is off and the differences between the observed scores and the stream reach median expectations are shown when the switch is on.'),      
 
         # show csci differences   
         materialSwitch('difr', 
@@ -107,7 +107,7 @@ shinyUI(fluidPage(
       
       column(width = 6,
           
-        h5('These controls change the attributes in the',  strong('right map'), '. The first slider controls the CSCI threshold and the second slider controls the certainty range of the predicted CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a sampling station. See the plot tab for more.'),      
+        h5('These controls change the attributes in the',  strong('right map'), '. The first slider controls the CSCI threshold and the second slider controls the certainty range of the expected CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a station.'),      
              
         # select CSCI threshold, master
         sliderTextInput(
@@ -152,7 +152,7 @@ shinyUI(fluidPage(
     
     tabPanel('Plot',
       
-      h5('This plot shows the CSCI score expectations for every stream reach with CSCI sampling stations.  The CSCI threshold and confidence range define the reach expectation and the CSCI performance for the sampling stations.  Toggle the sliders to see how these change on the plot, including the maps and table in the other tabs.'),
+      h5('This plot shows the range of CSCI score expectations for every stream reach with CSCI sampling stations.  The CSCI threshold and confidence range define the reach expectation and the CSCI performance for the sampling stations.  The median for the expected range of CSCI scores at a reach is shown as a white tick. Toggle the sliders to see how these change on the plot, including the maps and table in the other tabs.'),
              
       column(width = 4,
              
@@ -216,7 +216,7 @@ shinyUI(fluidPage(
         
     tabPanel('Table', 
 
-      h5('This table summarizes the sampling station performance for CSCI scores shown in the maps and plot in the other tabs. The "types" are finer divisions that further categorize sites relative to the performance.'),
+      h5('This table summarizes the sampling station performance for CSCI scores shown in the maps and plot in the other tabs. The "types" are finer divisions that further categorize sites relative to the performance and CSCI threshold.  The types can be used to recommend priorities for management actions.'),
              
       column(width = 6,
             
