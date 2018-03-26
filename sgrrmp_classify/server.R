@@ -8,6 +8,7 @@ library(scales)
 library(leaflet.minicharts)
 library(manipulateWidget)
 library(RColorBrewer)
+library(gridExtra)
 source('R/funcs.R')
 
 prj <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
@@ -25,6 +26,22 @@ scrs_mv <- scrs %>%
   mapview(layer.name = 'reset') %>% 
   .@map %>% 
   syncWith('maps')
+
+sts <- paste('Site', seq(1:16))
+
+# example data, csci scores
+scrs_ex <- data.frame(
+  Site = factor(sts, levels = sts),
+  csci = c(1.25, 0.98, 0.81, 0.68, 1.14, 0.87, 0.73, 0.58, 0.98, 0.83, 0.68, 0.5, 0.88, 0.76, 0.57, 0.39)
+)
+
+# example data, stream predictions
+exps_ex <- data.frame(
+  Site = factor(sts, levels = sts),
+  minv = rep(c(0.84, 0.68, 0.58, 0.43), each = 4),
+  maxv = rep(c(1.14, 0.98, 0.88, 0.73), each = 4),
+  stringsAsFactors = F
+) 
 
 # color domain, csci scores and expectations
 dmn <- spat %>% 
@@ -79,6 +96,19 @@ pal_prf <- colorFactor(
     'over scoring (lc)', 'expected (lc)', 'under scoring (lc)')
 )
 
+# color palette for stream expectations
+pal_pri <- colorFactor(
+  palette = RColorBrewer::brewer.pal(9, 'Greys')[c(8, 5, 2)],
+  na.color = 'yellow',
+  levels = c('Protect', 'Investigate', 'Restore'))
+
+# color palette for CSCI type
+pal_typ <- colorFactor(
+  palette = RColorBrewer::brewer.pal(11, 'Spectral'),#hue_pal()(100), 
+  na.color = 'yellow',
+  domain = paste0('Type', sprintf('%02d', seq(1:16)))
+)
+
 # server logic
 server <- function(input, output, session) {
   
@@ -115,6 +145,16 @@ server <- function(input, output, session) {
     out <- spat %>% 
       left_join(cls, by = 'COMID')
 
+    out
+    
+  })
+  
+  # example data to plot on priorities tab
+  plot_ex <- reactive({
+    
+    # output
+    out <- proc_all(exps_ex, scrs_ex, thrsh = 0.79, tails = 0.05)
+    
     out
     
   })
@@ -205,16 +245,90 @@ server <- function(input, output, session) {
     
   })
   
+  # site priorities from user selections
+  scr_pri <- reactive({
+    
+    out <- get_pri_inp(input, plot_ex(), scr_exp_map()) 
+    return(out)
+    
+  })
+  
+  # all priority, type counts
+  allcnts <- reactive({
+    
+    # to join to get all priority categories (for those with zero)
+    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore'), stringsAsFactors = F)
+    
+    # to join to get all types (for those with zero)
+    alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 16))), stringsAsFactors = F)
+    
+    # get priority counts, join with allpri for all priority categories
+    out <- scr_pri() %>% 
+      unnest %>% 
+      rename(Type = typelv) %>% 
+      group_by(Priority, Type) %>% 
+      nest %>% 
+      mutate(n = map(data, nrow)) %>%
+      select(-data) %>% 
+      left_join(allpri, ., by = 'Priority') %>% 
+      group_by(Priority) %>% 
+      nest %>% 
+      mutate(data = map(data, ~ left_join(alltyp, .x, by = 'Type'))) %>% 
+      unnest %>% 
+      mutate(
+        n = map(n, ~ ifelse(is.null(.x), 0, .x))
+      )
+    
+    return(out)
+    
+  })
+  
+  # priority only counts, across typs
+  output$cnts <- reactive({
+    
+    out <- allcnts() %>% 
+      select(Priority, n) %>% 
+      unnest %>% 
+      group_by(Priority) %>% 
+      summarise(n = sum(n)) %>% 
+      mutate(n = as.character(n)) %>% 
+      deframe %>% 
+      as.list
+    
+    return(out)
+    
+  })
+  
+  # type only counts, across priorities
+  output$typs <- reactive({
+    
+    out <- allcnts() %>% 
+      select(Type, n) %>% 
+      unnest %>% 
+      group_by(Type) %>% 
+      summarise(n = sum(n)) %>% 
+      mutate(n = as.character(n)) %>% 
+      deframe %>% 
+      as.list
+    
+    return(out)
+    
+  })
+  
   ##
   # these update inputs that are duplicated across tabs
   trs <- ''
   tls <- ''
+  jtr <- ''
+  lsz <- ''
+  psz <- ''
   
   # thrsh
   observe({
     if (trs != input$thrsh){
       updateSliderTextInput(session, "thrsh2", selected = input$thrsh)
       updateSliderTextInput(session, "thrsh3", selected = input$thrsh)
+      updateSliderTextInput(session, "thrsh4", selected = input$thrsh)
       trs <<- input$thrsh
     }
   })
@@ -222,6 +336,7 @@ server <- function(input, output, session) {
     if (trs != input$thrsh2){
       updateSliderTextInput(session, "thrsh", selected = input$thrsh2)
       updateSliderTextInput(session, "thrsh3", selected = input$thrsh2)
+      updateSliderTextInput(session, "thrsh4", selected = input$thrsh2)
       trs <<- input$thrsh2
     }
   })
@@ -229,7 +344,16 @@ server <- function(input, output, session) {
     if (trs != input$thrsh3){
       updateSliderTextInput(session, "thrsh", selected = input$thrsh3)
       updateSliderTextInput(session, "thrsh2", selected = input$thrsh3)
+      updateSliderTextInput(session, "thrsh4", selected = input$thrsh3)
       trs <<- input$thrsh3
+    }
+  })
+  observe({
+    if (trs != input$thrsh4){
+      updateSliderTextInput(session, "thrsh", selected = input$thrsh4)
+      updateSliderTextInput(session, "thrsh2", selected = input$thrsh4)
+      updateSliderTextInput(session, "thrsh3", selected = input$thrsh4)
+      trs <<- input$thrsh4
     }
   })
   
@@ -238,6 +362,7 @@ server <- function(input, output, session) {
     if (trs != input$tails){
       updateSliderTextInput(session, "tails2", selected = input$tails)
       updateSliderTextInput(session, "tails3", selected = input$tails)
+      updateSliderTextInput(session, "tails4", selected = input$tails)
       trs <<- input$tails
     }
   })
@@ -245,6 +370,7 @@ server <- function(input, output, session) {
     if (trs != input$tails2){
       updateSliderTextInput(session, "tails", selected = input$tails2)
       updateSliderTextInput(session, "tails3", selected = input$tails2)
+      updateSliderTextInput(session, "tails4", selected = input$tails2)
       trs <<- input$tails2
     }
   })
@@ -252,9 +378,60 @@ server <- function(input, output, session) {
     if (trs != input$tails3){
       updateSliderTextInput(session, "tails", selected = input$tails3)
       updateSliderTextInput(session, "tails2", selected = input$tails3)
+      updateSliderTextInput(session, "tails4", selected = input$tails3)
       trs <<- input$tails3
     }
   })
+  observe({
+    if (trs != input$tails4){
+      updateSliderTextInput(session, "tails", selected = input$tails4)
+      updateSliderTextInput(session, "tails2", selected = input$tails4)
+      updateSliderTextInput(session, "tails3", selected = input$tails4)
+      trs <<- input$tails4
+    }
+  })
+  
+  # # jitr
+  # observe({
+  #   if (jtr != input$jitr){
+  #     updateSliderInput(session, "jitr2", value = input$jitr)
+  #     jtr <<- input$jitr
+  #   }
+  # })
+  # observe({
+  #   if (jtr != input$jitr2){
+  #     updateSliderInput(session, "jitr", value = input$jitr2)
+  #     jtr <<- input$jitr2
+  #   }
+  # })
+  # 
+  # # ln_sz
+  # observe({
+  #   if (lsz != input$ln_sz){
+  #     updateSliderInput(session, "ln_sz2", value = input$ln_sz)
+  #     lsz <<- input$ln_sz
+  #   }
+  # })
+  # observe({
+  #   if (lsz != input$ln_sz2){
+  #     updateSliderInput(session, "ln_sz", value = input$ln_sz2)
+  #     lsz <<- input$ln_sz2
+  #   }
+  # })
+  # 
+  # # pt_sz
+  # observe({
+  #   if (psz != input$pt_sz){
+  #     updateSliderInput(session, "pt_sz2", value = input$pt_sz)
+  #     psz <<- input$pt_sz
+  #   }
+  # })
+  # observe({
+  #   if (psz != input$pt_sz2){
+  #     updateSliderInput(session, "pt_sz", value = input$pt_sz2)
+  #     psz <<- input$pt_sz2
+  #   }
+  # })
   
   # non-reactive base map
   output$map <- renderLeaflet(scrs_mv)
@@ -350,7 +527,7 @@ server <- function(input, output, session) {
     nocon <- input$nocon
     
     # CSCI scores and expectations
-    toplo1 <- scr_exp() %>% 
+    toplo1 <- scr_exp_map() %>% 
       select(COMID, StationCode, datcut, strcls, csci, perf, typelv, perf_mlt) %>% 
       unnest %>% 
       mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
@@ -361,14 +538,14 @@ server <- function(input, output, session) {
         )
 
     # total expected range
-    toplo2 <- scr_exp() %>% 
+    toplo2 <- scr_exp_map() %>% 
       select(COMID, StationCode, data, strcls) %>% 
       unnest %>% 
       mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
       rename(`Stream Class` = strcls)
     
     # median expectation
-    toplo3 <- scr_exp() %>%
+    toplo3 <- scr_exp_map() %>%
       select(COMID, StationCode, datcut) %>% 
       unnest %>% 
       filter(grepl('0\\.50$', var))
@@ -437,10 +614,166 @@ server <- function(input, output, session) {
   output$tab_sum <- DT::renderDataTable({
     
     # summary table by csci type          
-    totab <- get_tab(scr_exp(), thrsh = thrsh(), tails = tlinp())
+    totab <- get_tab(scr_exp_map(), thrsh = thrsh(), tails = tlinp())
       
     return(totab)
       
   }, rownames = F, options = list(dom = 't', pageLength = 16))
-   
+  
+  # the selection priority plot
+  siteplo <- reactive({
+
+    mythm <- theme_minimal(base_family = 'serif', base_size = 18) +
+      theme(
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line.x = element_line(),
+        axis.line.y = element_line(),
+        axis.ticks.y = element_line(),
+        axis.text.x = element_blank(),
+        legend.position = 'top'
+      )
+
+    p <- ggplot(plot_ex(), aes(x = typelv)) +
+      geom_errorbar(aes(ymin = minv, ymax = maxv, colour = `Stream class`), width = 0, size = 2, alpha = 0.2) +
+      geom_errorbar(aes(ymin = minv_qt, ymax = maxv_qt, colour = `Stream class`), width = 0, size = 2, alpha = 0.7) +
+      geom_point(aes(y  = `CSCI score`, fill = `Relative\nperformance`), shape = 21, size = 7, alpha = 0.8) +
+      geom_hline(yintercept = 0.79, linetype = 'dashed') +
+      scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)),
+                          guide = guide_legend(direction = 'vertical', title.position = 'left')) +
+      scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nperformance`)),
+                        guide = guide_legend(ncol = 3, direction = 'vertical', title.position = 'left')) +
+      scale_x_discrete(limits = rev(levels(plot_ex()$typelv))) +
+      mythm +
+      coord_flip()
+
+    # get legend
+    pleg <- g_legend(p)
+    p <- p +
+      mythm %+replace%
+      theme(legend.position = 'none')
+
+    # output as list
+    plo_ls <- list(pleg, p)
+    return(plo_ls)
+
+  })
+
+  # expectation plot legend
+  output$plo_leg <- renderPlot({
+    grid.arrange(siteplo()[[1]])
+  })
+
+  # expectation plot
+  output$plo_exp2 <- renderPlot({
+    siteplo()[[2]]
+  })
+  
+  # non-reactive base map, protect priority
+  output$bs_pro <- renderLeaflet(scrs_mv)
+  
+  # non-reactive base map, investigate priority
+  output$bs_inv <- renderLeaflet(scrs_mv)
+  
+  # non-reactive base map, restore priority
+  output$bs_res <- renderLeaflet(scrs_mv)
+  
+  ##
+  # reactive maps
+  observe({
+    
+    # other inputs
+    ptsz <- input$pt_sz2
+    lnsz <- input$ln_sz2
+    
+    # reactives
+    dat_exp <- dat_exp()
+    scr_pri <- scr_pri()
+    
+    # get seperate priorities from scr_pri_map
+    dat_pro <- filter(scr_pri, Priority %in% 'Protect')$value
+    dat_inv <- filter(scr_pri, Priority %in% 'Investigate')$value
+    dat_res <- filter(scr_pri, Priority %in% 'Restore')$value
+    
+    # base protect map
+    pri_pro <- leafletProxy("bs_pro", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>% 
+      addLegend("topright", pal = pal_exp, values = ~strcls,
+                title = "Expected classification (lines)",
+                opacity = 1
+      ) %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      )
+    
+    # base investigate map
+    pri_inv <- leafletProxy("bs_inv", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      ) 
+    
+    # base restore map
+    pri_res <- leafletProxy("bs_res", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>% 
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      )
+    
+    # add protect points if not empty
+    if(length(dat_pro) > 0){
+      
+      pri_pro <- pri_pro %>% 
+        addCircleMarkers(data = dat_pro[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_pro[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
+        )
+      
+    }
+    
+    # add investigate points if not empty
+    if(length(dat_inv) > 0){
+      
+      pri_inv <- pri_inv %>% 
+        addCircleMarkers(data = dat_inv[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_inv[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
+        )
+      
+    }
+    
+    # add restore points if not empty
+    if(length(dat_res) > 0){
+      
+      pri_res <- pri_res %>% 
+        addCircleMarkers(data = dat_res[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_res[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
+        )
+    }
+    
+    # sync the maps
+    combineWidgets(pri_pro, pri_inv, pri_res)
+    
+  })
+
 }

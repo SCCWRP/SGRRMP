@@ -4,7 +4,9 @@ library(shinyBS)
 library(shinyCustom)
 library(shinydashboard)
 library(shinyWidgets)
+library(ShinyDash)
 library(tidyverse)
+library(mapview)
 library(rvest)
 
 # last commit date
@@ -14,7 +16,20 @@ dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>%
   .[1] %>% 
   gsub('^.*Commits on (.*)\\n.*$', '\\1', .)
 
-# Define UI for application that draws a histogram
+# column padding global
+pad <- 'padding:0px;'
+
+# html text for type counts
+typi <- paste0('Type', sprintf('%02d', seq(1, 16)))
+typtxt <- NULL
+for(i in typi){
+  ctxt <- paste0('<b><span id="', i, '"></span></b> ', i)
+  typtxt <- c(typtxt, ctxt)
+}
+typtxt <- paste(typtxt, collapse = ', ') %>% 
+  paste('<h4>Site type counts:', ., '</h4>')
+
+# Define UI for application
 shinyUI(fluidPage(
   
   theme = 'styles.css',
@@ -255,6 +270,258 @@ shinyUI(fluidPage(
                    
       )
     
+    ),
+
+    tabPanel('Prioritize',
+
+      # plot output legend
+      column(width = 12,
+
+            plotOutput('plo_leg', width = '100%', height = 100)
+
+      ),
+
+      # site priority selectors
+      column(width = 2,
+
+            div(style = 'padding:11px;'),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 1", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 2", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 3", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 4", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 5", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Investigate', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 7", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 8", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 9", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 10", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 11", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 12", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 13", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 14", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 15", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            multiple = TRUE
+                )
+            ),
+
+            div(style = pad,
+                pickerInput(inputId = "Site 16", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            multiple = TRUE
+                )
+            )
+
+      ),
+      # plot output
+      column(width = 10,
+
+            plotOutput('plo_exp2', width = '100%', height = 900)
+
+      )
+
+    ),
+    
+    tabPanel('Priority maps',
+       
+      h5("Move a slider to initialize maps..."),
+       
+      # select point radius
+      column(width = 4,
+            customSliderInput("pt_sz2",
+                              label = h6("Point size:"),
+                              min = 0,
+                              max = 15,
+                              value = 4,
+                              step = 1,
+                              width = '400px',
+                              ticks = FALSE
+            )
+      ),
+
+      # select line size
+      column(width = 4,
+            customSliderInput("ln_sz2",
+                              label = h6("Line size:"),
+                              min = 0,
+                              max = 5,
+                              value = 1,
+                              step = 0.1,
+                              width = '400px',
+                              ticks = FALSE
+            )
+
+      ),
+
+      column(width = 4,
+            customSliderInput('jitr2',
+                              label = h6("Jitter overlaps:"),
+                              min = 0,
+                              max = 500,
+                              value = 0,
+                              step = 25,
+                              width = '400px',
+                              ticks = FALSE
+            )
+
+      ),
+
+      column(width = 4,
+
+            # select CSCI threshold, master
+            sliderTextInput(
+              inputId = "thrsh4",
+              label = h6("CSCI reference threshold:"),
+              grid = FALSE,
+              force_edges = TRUE,
+              selected = '10% (0.79)',
+              choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
+              width = '600px'
+            )
+
+      ),
+
+      column(width = 4,
+
+            # selected tails, master
+            sliderTextInput(
+              inputId = "tails4",
+              label = h6("Confidence range (+/-):"),
+              grid = FALSE,
+              force_edges = TRUE,
+              choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'),
+              width = '600px'
+            )
+
+      ),
+
+      # site priority counts
+      column(width = 12,
+            htmlWidgetOutput(
+              outputId = 'cnts',
+              HTML('<h3>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Investigate"></span></b> investigate, <b><span id="Restore"></span></b> restore</h3>')
+            )),
+
+      # site type counts
+      column(width = 12,
+            htmlWidgetOutput(
+              outputId = 'typs',
+              HTML(typtxt)
+            )),
+
+      # investigate map
+      column(width = 4,
+
+            h3('Investigate'),
+            leafletOutput('bs_inv', width = '100%', height = 550),
+            h3()
+
+      ),
+
+      # protect map
+      column(width = 4,
+
+            h3('Protect'),
+            leafletOutput('bs_pro', width = '100%', height = 550),
+            h3()
+
+      ),
+
+      # restore map
+      column(width = 4,
+
+            h3('Restore'),
+            leafletOutput('bs_res', width = '100%', height = 550),
+            h3()
+
+      )
+
     )
                   
   )
