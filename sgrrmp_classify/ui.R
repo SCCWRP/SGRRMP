@@ -51,100 +51,94 @@ shinyUI(fluidPage(
 
     column(width = 12, 
       h4('Created by Marcus W. Beck,', a('marcusb@sccwrp.org', href = 'mailto:marcusb@sccwrp.org'), ", Raphael D. Mazor,", a('raphaelm@sccwrp.org', href = 'mailto:raphaelm@sccwrp.org'), ", Scott Johnson,", a('scott@aquaticbioassay.com', href = 'mailto:scott@aquaticbioassay.com'), ", Peter Ode,", a('Peter.Ode@wildlife.ca.gov', href = 'mailto:Peter.Ode@wildlife.ca.gov'))
-      )
+    )
 
   ),
+
+  # master widgets    
+  column(width = 12, 
     
+    h5('These sliders determine how stream expectations and site performance is evaluated. The first slider controls the CSCI threshold and the second slider controls the certainty range of the expected CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a station (see step 2). The third slider applies a jitter for monitoring sites with more than one visit.  These are seen as jitter points on the map.  Tabular summaries (step 4 and 5) will include all repeat visit if jitter is greater than zero, otherwise the site average across repeat visits is used.'),      
+    
+    # select CSCI threshold, master
+    column(width = 4,    
+          sliderTextInput(
+            inputId = "thrsh",
+            label = h6("CSCI reference threshold:"),
+            grid = FALSE,
+            force_edges = TRUE,
+            selected = '10% (0.79)',
+            choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
+            width = '600px'
+          )
+    ),
+    
+    # selected tails, master
+    column(width = 4,
+          sliderTextInput(
+            inputId = "tails", 
+            label = h6("Confidence range (+/-):"),  
+            grid = FALSE, 
+            force_edges = TRUE,
+            choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
+            width = '600px'
+          )
+    ), 
+    
+    # apply jitter 
+    column(width = 4, 
+          customSliderInput('jitr', 
+                            label = h6("Jitter overlaps:"), 
+                            min = 0, 
+                            max = 500,
+                            value = 0, 
+                            step = 25, 
+                            width = '400px', 
+                            ticks = FALSE
+          )
+    ),
+
+    h5('These sliders control the aesthetics in the maps. Use them to change the point and line sizes.'), 
+    
+    # select point radius
+    column(width = 6,
+          customSliderInput("pt_sz", 
+                            label = h6("Point size:"), 
+                            min = 0, 
+                            max = 15,
+                            value = 4, 
+                            step = 1, 
+                            width = '400px', 
+                            ticks = FALSE
+          )
+      ),
+    
+    # select line size
+    column(width = 6,
+          customSliderInput("ln_sz", 
+                            label = h6("Line size:"), 
+                            min = 0, 
+                            max = 5,
+                            value = 1, 
+                            step = 0.1, 
+                            width = '400px', 
+                            ticks = FALSE
+          )
+      )          
+         
+  ),
+  
   tabsetPanel(
     
-    tabPanel('Maps',
+    tabPanel('(1) Maps',
 
-      h5('These two maps show stream reach classifications and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted CSCI score for a reach and measured CSCI score at a station from from field data.  The', strong('right map'), 'shows the CSCI score expectation for a reach and the site performance at a station relative to the expectation. See the plot tab for more details on how expectations and performance are determined.'),   
-
-      column(width = 12, 
-             
-        h5('These sliders control the aesthetics in both maps. Use them to change the point/line sizes and apply a jitter for repeat visits as the same station.  The average CSCI across all samples at a site is shown if jitter is set to zero.'), 
-        
-        # select point radius
-        column(width = 4,
-              customSliderInput("pt_sz", 
-                          label = h6("Point size:"), 
-                          min = 0, 
-                          max = 15,
-                          value = 4, 
-                          step = 1, 
-                          width = '400px', 
-                          ticks = FALSE
-              )
-        ),
-        
-        # select line size
-        column(width = 4,
-              customSliderInput("ln_sz", 
-                          label = h6("Line size:"), 
-                          min = 0, 
-                          max = 5,
-                          value = 1, 
-                          step = 0.1, 
-                          width = '400px', 
-                          ticks = FALSE
-              )
-        ),          
-        
-        column(width = 4,
-               
-               customSliderInput('jitr', 
-                           label = h6("Jitter overlaps:"), 
-                           min = 0, 
-                           max = 500,
-                           value = 0, 
-                           step = 25, 
-                           width = '400px', 
-                           ticks = FALSE
-               )
-               
-        )
-        
-      ),
-         
-      column(width = 6, 
-        
-        h5('The toggle switch for the', strong('left map'), 'controls how the CSCI scores at the stations (points) are displayed.  The observed scores from field samples are shown when the switch is off and the differences between the observed scores and the stream reach median expectations are shown when the switch is on.'),      
-
-        # show csci differences   
-        materialSwitch('difr', 
-          label = h6('CSCI observed - predicted:'), 
-          status = 'primary',
-          right = F
-        )
-        
-      ), 
-      
-      column(width = 6,
-          
-        h5('These controls change the attributes in the',  strong('right map'), '. The first slider controls the CSCI threshold and the second slider controls the certainty range of the expected CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a station.'),      
-             
-        # select CSCI threshold, master
-        sliderTextInput(
-          inputId = "thrsh",
-          label = h6("CSCI reference threshold:"),
-          grid = FALSE,
-          force_edges = TRUE,
-          selected = '10% (0.79)',
-          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
-          width = '600px'
-        ),
-
-        # selected tails, master
-        sliderTextInput(
-          inputId = "tails", 
-          label = h6("Confidence range (+/-):"),  
-          grid = FALSE, 
-          force_edges = TRUE,
-          choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
-          width = '600px'
-        )
-
+      h5('These maps show stream reach classifications and CSCI scores at monitoring stations.  The', strong('left map'), 'shows the predicted median CSCI score for a reach and measured CSCI score at a station from from field data.  The', strong('right map'), 'shows the CSCI score expectation for a reach and the site performance at a station relative to the expectation. See the plot tab (step 2) for more details on how expectations and performance are determined. The toggle switch controls how the CSCI scores at the stations (points) on the left map are displayed.  The observed scores from field samples are shown when the switch is off and the differences between the observed scores and the stream reach median expectations are shown when the switch is on.'),
+       
+      # show csci differences   
+      materialSwitch('difr', 
+                     label = h6('CSCI observed - predicted:'), 
+                     status = 'primary',
+                     right = F
       ),
     
       # map output
@@ -165,39 +159,10 @@ shinyUI(fluidPage(
 
     ),
     
-    tabPanel('Plot',
+    tabPanel('(2) Plot summary',
       
       h5('This plot shows the range of CSCI score expectations for every stream reach with CSCI sampling stations.  The CSCI threshold and confidence range define the reach expectation and the CSCI performance for the sampling stations.  The median for the expected range of CSCI scores at a reach is shown as a white tick. Toggle the sliders to see how these change on the plot, including the maps and table in the other tabs.'),
              
-      column(width = 4,
-             
-        # select CSCI threshold
-        sliderTextInput(
-          inputId = "thrsh2", 
-          label = h6("CSCI reference threshold:"),  
-          grid = FALSE, 
-          force_edges = TRUE,
-          selected = '10% (0.79)',
-          choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'), 
-          width = '600px'
-        )
-        
-      ),   
-      
-      column(width = 4, 
-             
-        # selected tails
-        sliderTextInput(
-          inputId = "tails2", 
-          label = h6("Confidence range (+/-):"),  
-          grid = FALSE, 
-          force_edges = TRUE,
-          choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
-          width = '400px'
-        )
-        
-      ),
-        
       column(width = 2,
              
         # order by site
@@ -211,12 +176,12 @@ shinyUI(fluidPage(
     
       column(width = 2,
              
-             # order by site
-             materialSwitch('nocon', 
-                            label = h6('No context:'), 
-                            status = 'primary',
-                            right = F
-             )
+         # order by site
+         materialSwitch('nocon', 
+                        label = h6('No context:'), 
+                        status = 'primary',
+                        right = F
+         )
              
       ),
       
@@ -229,38 +194,9 @@ shinyUI(fluidPage(
              
     ), 
         
-    tabPanel('Table', 
+    tabPanel('(3) Table summary', 
 
-      h5('This table summarizes the sampling station performance for CSCI scores shown in the maps and plot in the other tabs. The "types" are finer divisions that further categorize sites relative to the performance and CSCI threshold.  The types can be used to recommend priorities for management actions.'),
-             
-      column(width = 6,
-            
-            # select CSCI threshold
-            sliderTextInput(
-             inputId = "thrsh3", 
-             label = h6("CSCI reference threshold:"),  
-             grid = FALSE, 
-             force_edges = TRUE,
-             selected = '10% (0.79)',
-             choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'), 
-             width = '600px'
-            )
-
-      ),   
-      
-      column(width = 6, 
-          
-            # selected tails
-            sliderTextInput(
-              inputId = "tails3", 
-              label = h6("Confidence range (+/-):"),  
-              grid = FALSE, 
-              force_edges = TRUE,
-              choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
-              width = '600px'
-            )
-            
-      ),
+      h5('This table summarizes the sampling station performance for CSCI scores shown in the maps and plot in steps 1 and 2. The "types" are finer divisions that further categorize sites relative to the performance and CSCI threshold.  The types are based on score performance and location relative to the selected CSCI threshold. The types can be used to recommend priorities for management actions in step 4.'),
 
       # table output
       column(width = 12, 
@@ -272,7 +208,17 @@ shinyUI(fluidPage(
     
     ),
 
-    tabPanel('Prioritize',
+    tabPanel('(4) Prioritize types',
+
+      h5('This plot can be used to identify potential management actions for each site type.  The plot on the right shows a graphical depiction of the types in the able in step 3.  Priorities for each type can be selected from none to many using the drop-down menus for each type on the left.  These priorities can then be viewed with the maps in step 5.'),
+      
+      h5('The default priorities were based on recommendations from a stakeholder group with familiarity of the watershed.  The priorities are generalized into three categories to recommend actions in addition to baseline monitoring and maintenance:'),
+      
+      HTML('<ul>
+<li><strong>Investigate</strong>: Additional monitoring or review of supplementary data (e.g., aerial imagery)</li>
+<li><strong>Protect</strong>: Additional scrutiny of proposed development and/or projects</li>
+<li><strong>Restore</strong>: Targeted action for causal assessment and/or restoration funds</li>
+           </ul>'),
 
       # plot output legend
       column(width = 12,
@@ -408,78 +354,9 @@ shinyUI(fluidPage(
 
     ),
     
-    tabPanel('Priority maps',
+    tabPanel('(5) Priority maps',
        
       h5("Move a slider to initialize maps..."),
-       
-      # select point radius
-      column(width = 4,
-            customSliderInput("pt_sz2",
-                              label = h6("Point size:"),
-                              min = 0,
-                              max = 15,
-                              value = 4,
-                              step = 1,
-                              width = '400px',
-                              ticks = FALSE
-            )
-      ),
-
-      # select line size
-      column(width = 4,
-            customSliderInput("ln_sz2",
-                              label = h6("Line size:"),
-                              min = 0,
-                              max = 5,
-                              value = 1,
-                              step = 0.1,
-                              width = '400px',
-                              ticks = FALSE
-            )
-
-      ),
-
-      column(width = 4,
-            customSliderInput('jitr2',
-                              label = h6("Jitter overlaps:"),
-                              min = 0,
-                              max = 500,
-                              value = 0,
-                              step = 25,
-                              width = '400px',
-                              ticks = FALSE
-            )
-
-      ),
-
-      column(width = 4,
-
-            # select CSCI threshold, master
-            sliderTextInput(
-              inputId = "thrsh4",
-              label = h6("CSCI reference threshold:"),
-              grid = FALSE,
-              force_edges = TRUE,
-              selected = '10% (0.79)',
-              choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
-              width = '600px'
-            )
-
-      ),
-
-      column(width = 4,
-
-            # selected tails, master
-            sliderTextInput(
-              inputId = "tails4",
-              label = h6("Confidence range (+/-):"),
-              grid = FALSE,
-              force_edges = TRUE,
-              choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'),
-              width = '600px'
-            )
-
-      ),
 
       # site priority counts
       column(width = 12,

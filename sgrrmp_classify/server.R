@@ -257,7 +257,7 @@ server <- function(input, output, session) {
   allcnts <- reactive({
     
     # to join to get all priority categories (for those with zero)
-    allpri <- data.frame(Priority = c('Protect', 'Monitor', 'Restore'), stringsAsFactors = F)
+    allpri <- data.frame(Priority = c('Protect', 'Investigate', 'Restore'), stringsAsFactors = F)
     
     # to join to get all types (for those with zero)
     alltyp <- data.frame(Type = paste0('Type', sprintf('%02d', seq(1, 16))), stringsAsFactors = F)
@@ -314,124 +314,6 @@ server <- function(input, output, session) {
     return(out)
     
   })
-  
-  ##
-  # these update inputs that are duplicated across tabs
-  trs <- ''
-  tls <- ''
-  jtr <- ''
-  lsz <- ''
-  psz <- ''
-  
-  # thrsh
-  observe({
-    if (trs != input$thrsh){
-      updateSliderTextInput(session, "thrsh2", selected = input$thrsh)
-      updateSliderTextInput(session, "thrsh3", selected = input$thrsh)
-      updateSliderTextInput(session, "thrsh4", selected = input$thrsh)
-      trs <<- input$thrsh
-    }
-  })
-  observe({
-    if (trs != input$thrsh2){
-      updateSliderTextInput(session, "thrsh", selected = input$thrsh2)
-      updateSliderTextInput(session, "thrsh3", selected = input$thrsh2)
-      updateSliderTextInput(session, "thrsh4", selected = input$thrsh2)
-      trs <<- input$thrsh2
-    }
-  })
-  observe({
-    if (trs != input$thrsh3){
-      updateSliderTextInput(session, "thrsh", selected = input$thrsh3)
-      updateSliderTextInput(session, "thrsh2", selected = input$thrsh3)
-      updateSliderTextInput(session, "thrsh4", selected = input$thrsh3)
-      trs <<- input$thrsh3
-    }
-  })
-  observe({
-    if (trs != input$thrsh4){
-      updateSliderTextInput(session, "thrsh", selected = input$thrsh4)
-      updateSliderTextInput(session, "thrsh2", selected = input$thrsh4)
-      updateSliderTextInput(session, "thrsh3", selected = input$thrsh4)
-      trs <<- input$thrsh4
-    }
-  })
-  
-  # tails
-  observe({
-    if (trs != input$tails){
-      updateSliderTextInput(session, "tails2", selected = input$tails)
-      updateSliderTextInput(session, "tails3", selected = input$tails)
-      updateSliderTextInput(session, "tails4", selected = input$tails)
-      trs <<- input$tails
-    }
-  })
-  observe({
-    if (trs != input$tails2){
-      updateSliderTextInput(session, "tails", selected = input$tails2)
-      updateSliderTextInput(session, "tails3", selected = input$tails2)
-      updateSliderTextInput(session, "tails4", selected = input$tails2)
-      trs <<- input$tails2
-    }
-  })
-  observe({
-    if (trs != input$tails3){
-      updateSliderTextInput(session, "tails", selected = input$tails3)
-      updateSliderTextInput(session, "tails2", selected = input$tails3)
-      updateSliderTextInput(session, "tails4", selected = input$tails3)
-      trs <<- input$tails3
-    }
-  })
-  observe({
-    if (trs != input$tails4){
-      updateSliderTextInput(session, "tails", selected = input$tails4)
-      updateSliderTextInput(session, "tails2", selected = input$tails4)
-      updateSliderTextInput(session, "tails3", selected = input$tails4)
-      trs <<- input$tails4
-    }
-  })
-  
-  # # jitr
-  # observe({
-  #   if (jtr != input$jitr){
-  #     updateSliderInput(session, "jitr2", value = input$jitr)
-  #     jtr <<- input$jitr
-  #   }
-  # })
-  # observe({
-  #   if (jtr != input$jitr2){
-  #     updateSliderInput(session, "jitr", value = input$jitr2)
-  #     jtr <<- input$jitr2
-  #   }
-  # })
-  # 
-  # # ln_sz
-  # observe({
-  #   if (lsz != input$ln_sz){
-  #     updateSliderInput(session, "ln_sz2", value = input$ln_sz)
-  #     lsz <<- input$ln_sz
-  #   }
-  # })
-  # observe({
-  #   if (lsz != input$ln_sz2){
-  #     updateSliderInput(session, "ln_sz", value = input$ln_sz2)
-  #     lsz <<- input$ln_sz2
-  #   }
-  # })
-  # 
-  # # pt_sz
-  # observe({
-  #   if (psz != input$pt_sz){
-  #     updateSliderInput(session, "pt_sz2", value = input$pt_sz)
-  #     psz <<- input$pt_sz
-  #   }
-  # })
-  # observe({
-  #   if (psz != input$pt_sz2){
-  #     updateSliderInput(session, "pt_sz", value = input$pt_sz2)
-  #     psz <<- input$pt_sz2
-  #   }
-  # })
   
   # non-reactive base map
   output$map <- renderLeaflet(scrs_mv)
@@ -684,8 +566,8 @@ server <- function(input, output, session) {
   observe({
     
     # other inputs
-    ptsz <- input$pt_sz2
-    lnsz <- input$ln_sz2
+    ptsz <- input$pt_sz
+    lnsz <- input$ln_sz
     
     # reactives
     dat_exp <- dat_exp()
