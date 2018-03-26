@@ -24,8 +24,15 @@ scrs_mv <- scrs %>%
   st_as_sf(coords = c('long', 'lat')) %>% 
   st_set_crs(prj) %>% 
   mapview(layer.name = 'reset') %>% 
-  .@map %>% 
-  syncWith('maps')
+  .@map
+
+# base mapview sync, first tab
+scrs_mv1 <- scrs_mv %>% 
+  syncWith('maps1')
+
+# base mapview sync, final tab
+scrs_mv2 <- scrs_mv %>% 
+  syncWith('maps2')
 
 sts <- paste('Site', seq(1:16))
 
@@ -285,134 +292,47 @@ server <- function(input, output, session) {
   
   # priority only counts, across typs
   output$cnts <- reactive({
-    
-    out <- allcnts() %>% 
-      select(Priority, n) %>% 
-      unnest %>% 
-      group_by(Priority) %>% 
-      summarise(n = sum(n)) %>% 
-      mutate(n = as.character(n)) %>% 
-      deframe %>% 
+
+    out <- allcnts() %>%
+      select(Priority, n) %>%
+      unnest %>%
+      group_by(Priority) %>%
+      summarise(n = sum(n)) %>%
+      mutate(n = as.character(n)) %>%
+      deframe %>%
       as.list
-    
+
     return(out)
-    
+
   })
-  
+
   # type only counts, across priorities
   output$typs <- reactive({
-    
-    out <- allcnts() %>% 
-      select(Type, n) %>% 
-      unnest %>% 
-      group_by(Type) %>% 
-      summarise(n = sum(n)) %>% 
-      mutate(n = as.character(n)) %>% 
-      deframe %>% 
+
+    out <- allcnts() %>%
+      select(Type, n) %>%
+      unnest %>%
+      group_by(Type) %>%
+      summarise(n = sum(n)) %>%
+      mutate(n = as.character(n)) %>%
+      deframe %>%
       as.list
-    
+
     return(out)
-    
-  })
-  
-  # non-reactive base map
-  output$map <- renderLeaflet(scrs_mv)
-  
-  # non-reactive base map, condition expectations
-  output$map_exp <- renderLeaflet(scrs_mv)
 
-  ##
-  # reactive maps
-  observe({
-    
-    # other inputs
-    ptsz <- input$pt_sz
-    lnsz <- input$ln_sz
-    typs <- input$typs
-    difr <- input$difr
-    
-    # reactives
-    dat <- dat()
-    dat_exp <- dat_exp()
-    scr_exp_map <- scr_exp_map()
-    
-    # score expectations
-    exp <- leafletProxy("map", data = dat) %>%
-      clearMarkers() %>%
-      clearShapes() %>% 
-      clearControls() %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns), 
-                   label = ~paste0(COMID, ', Likely score:', as.character(round(lns, 2)))
-      ) %>% 
-      addLegend("topright", pal = pal, values = ~lns,
-                title = "Reach prediction (lines)",
-                opacity = 1
-      )
-    
-    # csci scores if false, otherwise differences
-    if(difr){
-
-      exp <- exp %>% 
-        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
-                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci_difr, 2))),
-                         fillColor = ~pal_difr(csci_difr), color = 'black'
-        ) %>% 
-        addLegend("topright", pal = pal_difr, values = csci()$csci_difr,
-                  title = "CSCI difference",
-                  opacity = 1
-        )
-      
-    } else {
-      
-      exp <- exp %>% 
-        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8, 
-                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
-                         fillColor = ~pal(csci), color = 'black'
-        ) %>% 
-        addLegend("topright", pal = pal, values = csci()$csci,
-                  title = "CSCI observed (points)",
-                  opacity = 1
-        )
-      
-    }
-      
-    # condition expectations
-    exp_bs <- leafletProxy("map_exp", data = dat_exp) %>%
-      clearMarkers() %>%
-      clearShapes() %>% 
-      clearControls()%>% 
-      addLegend("topright", pal = pal_exp, values = ~strcls,
-                title = "Expected classification (lines)",
-                opacity = 1
-      ) %>% 
-      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
-                   label = ~paste0(COMID, ', Stream class:', strcls)
-      ) %>% 
-      addCircleMarkers(data = scr_exp_map, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9, 
-                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt),
-                       fillColor = ~pal_prf(perf_mlt), color = 'black'
-      ) %>% 
-      addLegend("topright", pal = pal_prf, values = scr_exp_map$perf_mlt,
-                title = "CSCI performance (points)",
-                opacity = 1
-      )
-  
-  # sync the maps
-  combineWidgets(exp, exp_bs)
-  
   })
-  
+
   # plot of csci scores and expectations by station code
   output$plo_exp <- renderPlot({
 
     bysta <- input$bysta
     nocon <- input$nocon
-    
+
     # CSCI scores and expectations
-    toplo1 <- scr_exp_map() %>% 
-      select(COMID, StationCode, datcut, strcls, csci, perf, typelv, perf_mlt) %>% 
-      unnest %>% 
-      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
+    toplo1 <- scr_exp_map() %>%
+      select(COMID, StationCode, datcut, strcls, csci, perf, typelv, perf_mlt) %>%
+      unnest %>%
+      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>%
       rename(
         `Stream Class` = strcls,
         `Relative\nperformance` = perf_mlt,
@@ -420,44 +340,44 @@ server <- function(input, output, session) {
         )
 
     # total expected range
-    toplo2 <- scr_exp_map() %>% 
-      select(COMID, StationCode, data, strcls) %>% 
-      unnest %>% 
-      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>% 
+    toplo2 <- scr_exp_map() %>%
+      select(COMID, StationCode, data, strcls) %>%
+      unnest %>%
+      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>%
       rename(`Stream Class` = strcls)
-    
+
     # median expectation
     toplo3 <- scr_exp_map() %>%
-      select(COMID, StationCode, datcut) %>% 
-      unnest %>% 
+      select(COMID, StationCode, datcut) %>%
+      unnest %>%
       filter(grepl('0\\.50$', var))
 
     # arrange by station if true
     if(bysta){
-      
-      toplo1 <- toplo1 %>% 
-        mutate(StationCode = as.character(StationCode)) %>% 
-        arrange(StationCode)%>% 
+
+      toplo1 <- toplo1 %>%
+        mutate(StationCode = as.character(StationCode)) %>%
+        arrange(StationCode)%>%
         mutate(
           StationCode = factor(StationCode),
           StationCode = factor(StationCode, levels = rev(levels(StationCode)))
         )
-      
-      toplo2 <- toplo2 %>% 
-        mutate(StationCode = as.character(StationCode)) %>% 
-        arrange(StationCode) %>% 
+
+      toplo2 <- toplo2 %>%
+        mutate(StationCode = as.character(StationCode)) %>%
+        arrange(StationCode) %>%
         mutate(
           StationCode = factor(StationCode),
           StationCode = factor(StationCode, levels = rev(levels(StationCode)))
         )
-      
+
     }
-    
+
     # bare bones plot if true
     if(nocon){
-      
+
       # plot
-      p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
+      p <- ggplot(toplo1, aes(y = StationCode, x = val)) +
         theme_bw(base_family = 'serif', base_size = 18) +
         theme(
           axis.text.y = element_text(size = 10)
@@ -466,14 +386,14 @@ server <- function(input, output, session) {
         scale_y_discrete('Site') +
         geom_point(aes(x = csci), fill = 'white', shape = 21, size = 4, alpha = 0.8) +
         geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1)
-           
+
     # otherwise full
     } else {
-      
+
       # plot
-      p <- ggplot(toplo1, aes(y = StationCode, x = val)) + 
+      p <- ggplot(toplo1, aes(y = StationCode, x = val)) +
         geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
-        geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) + 
+        geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) +
         geom_point(data = toplo3, colour = 'white', size = 1, alpha = 1, shape = 15) +
         theme_bw(base_family = 'serif', base_size = 18) +
         theme(
@@ -485,23 +405,23 @@ server <- function(input, output, session) {
         geom_point(aes(x = csci, fill = `Relative\nperformance`), shape = 21, size = 4, alpha = 0.8) +
         geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
         scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nperformance`)), na.value = 'yellow')
-      
+
     }
-    
+
     print(p)
-    
+
   })
-  
+
   # summary tables
   output$tab_sum <- DT::renderDataTable({
-    
-    # summary table by csci type          
+
+    # summary table by csci type
     totab <- get_tab(scr_exp_map(), thrsh = thrsh(), tails = tlinp())
-      
+
     return(totab)
-      
+
   }, rownames = F, options = list(dom = 't', pageLength = 16))
-  
+
   # the selection priority plot
   siteplo <- reactive({
 
@@ -552,17 +472,106 @@ server <- function(input, output, session) {
     siteplo()[[2]]
   })
   
+  ######
+  # maps
+  
+  # non-reactive base map for csci observed
+  output$map_med <- renderLeaflet(scrs_mv1)
+
+  # non-reactive base map, condition expectations
+  output$map_exp <- renderLeaflet(scrs_mv1)
+
+  ##
+  # reactive maps, all steps
+  observe({
+    
+    # other inputs
+    ptsz <- input$pt_sz
+    lnsz <- input$ln_sz
+    difr <- input$difr
+    
+    # reactives
+    dat <- dat()
+    dat_exp <- dat_exp()
+    scr_exp_map <- scr_exp_map()
+    
+    # score expectations
+    exp_med <- leafletProxy("map_med", data = dat) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls() %>%
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns),
+                   label = ~paste0(COMID, ', Likely score:', as.character(round(lns, 2)))
+      ) %>%
+      addLegend("topright", pal = pal, values = ~lns,
+                title = "Reach prediction (lines)",
+                opacity = 1
+      )
+    
+    # csci scores if false, otherwise differences
+    if(difr){
+      
+      exp_med <- exp_med %>%
+        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8,
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci_difr, 2))),
+                         fillColor = ~pal_difr(csci_difr), color = 'black'
+        ) %>%
+        addLegend("topright", pal = pal_difr, values = csci()$csci_difr,
+                  title = "CSCI difference",
+                  opacity = 1
+        )
+      
+    } else {
+      
+      exp_med <- exp_med %>%
+        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8,
+                         label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
+                         fillColor = ~pal(csci), color = 'black'
+        ) %>%
+        addLegend("topright", pal = pal, values = csci()$csci,
+                  title = "CSCI observed (points)",
+                  opacity = 1
+        )
+      
+    }
+    
+    # condition expectations
+    exp_cls <- leafletProxy("map_exp", data = dat_exp) %>%
+      clearMarkers() %>%
+      clearShapes() %>%
+      clearControls()%>%
+      addLegend("topright", pal = pal_exp, values = ~strcls,
+                title = "Expected classification (lines)",
+                opacity = 1
+      ) %>%
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls),
+                   label = ~paste0(COMID, ', Stream class:', strcls)
+      ) %>%
+      addCircleMarkers(data = scr_exp_map, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt),
+                       fillColor = ~pal_prf(perf_mlt), color = 'black'
+      ) %>%
+      addLegend("topright", pal = pal_prf, values = scr_exp_map$perf_mlt,
+                title = "CSCI performance (points)",
+                opacity = 1
+      )
+    
+    # sync the maps
+    combineWidgets(exp_med, exp_cls)
+    
+  })
+  
   # non-reactive base map, protect priority
-  output$bs_pro <- renderLeaflet(scrs_mv)
+  output$bs_pro <- renderLeaflet(scrs_mv2)
   
   # non-reactive base map, investigate priority
-  output$bs_inv <- renderLeaflet(scrs_mv)
+  output$bs_inv <- renderLeaflet(scrs_mv2)
   
   # non-reactive base map, restore priority
-  output$bs_res <- renderLeaflet(scrs_mv)
+  output$bs_res <- renderLeaflet(scrs_mv2)
   
   ##
-  # reactive maps
+  # reactive maps, all steps
   observe({
     
     # other inputs
@@ -570,7 +579,9 @@ server <- function(input, output, session) {
     lnsz <- input$ln_sz
     
     # reactives
+    dat <- dat()
     dat_exp <- dat_exp()
+    scr_exp_map <- scr_exp_map()
     scr_pri <- scr_pri()
     
     # get seperate priorities from scr_pri_map
