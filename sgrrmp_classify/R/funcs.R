@@ -584,29 +584,13 @@ get_pri_inp <- function(input, plot_ex, scr_exp_map){
   # site classications
   scr_exp_map <- scr_exp_map %>%
     mutate(typelv = as.character(typelv))
-  
+
   # format site priorities from input
-  scr_pri <- list(
-    `Site 1` = input$`Site 1`,
-    `Site 2` = input$`Site 2`,
-    `Site 3` = input$`Site 3`,
-    `Site 4` = input$`Site 4`,
-    `Site 5` = input$`Site 5`,
-    `Site 6` = input$`Site 6`,
-    `Site 7` = input$`Site 7`,
-    `Site 8` = input$`Site 8`,
-    `Site 9` = input$`Site 9`,
-    `Site 10` = input$`Site 10`,
-    `Site 11` = input$`Site 11`,
-    `Site 12` = input$`Site 12`,
-    `Site 13` = input$`Site 13`,
-    `Site 14` = input$`Site 14`,
-    `Site 15` = input$`Site 15`,
-    `Site 16` = input$`Site 16`
-  ) %>% 
-    enframe('Site', 'Priority') %>%
-    mutate(Priority = map(Priority, ~ ifelse(is.null(.x), 'Do nothing', .x))) %>%
-    unnest %>%
+  scr_pri <- sapply(paste('Site', 1:16), function(x) input[[x]])
+  scr_pri[unlist(map(scr_pri, is.null))] <- ''
+  scr_pri <- scr_pri %>% 
+    enframe('Site', 'Priority') %>% 
+    unnest %>% 
     mutate(
       Site = factor(Site, levels = levels(ex_jn$Site))
     ) %>%

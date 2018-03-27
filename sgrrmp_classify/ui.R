@@ -34,7 +34,7 @@ shinyUI(fluidPage(
   fluidRow(
   
     column(width = 12, 
-           h5('This application can be used to explore landscape constraints on biological integrity of streams in the San Gabriel River Watershed.  The application provides context for evaluating stream health by estimating an expectation of biological condition at a given stream reach relative to landscape drivers. The process begins by identifying stream classifications and expectations from user-defined parameters for CSCI thresholds and confidence in the biological expectation. Stream classifications of expected biological constraints are defined as likely unconstrained, possibly unconstrained, possibly constrained, and likely constrained.  Observed CSCI scores at a site are then characterized relative to the reach expectations as over-scoring, expected, or under-scoring.  Site performance relative to the expectation can be used to recommend priorities for management actions. Last updated:', dt)
+           h5('This application can be used to explore landscape constraints on biological integrity of streams in the San Gabriel River Watershed.  The application provides context for evaluating stream health by estimating an expectation of biological condition at a given stream reach relative to landscape drivers. Biological condition from field data using the California Stream Condition Index can be compared to the reach expectation.  The process begins by identifying stream classifications and expectations from user-defined parameters for CSCI thresholds and confidence in the biological expectation. Stream classifications of expected biological constraints are defined as likely unconstrained, possibly unconstrained, possibly constrained, and likely constrained.  Observed CSCI scores at a site are then characterized relative to the reach expectations as over-scoring, expected, or under-scoring.  Site performance relative to the expectation can be used to recommend priorities for management actions. Last updated:', dt)
     ),
     
     column(width = 12, img(src = "logo.jpg", width = '900px'), align = 'center', style = "margin-top: 0px;"),
@@ -121,7 +121,7 @@ shinyUI(fluidPage(
          
   ),
   
-  tabsetPanel(
+  tabsetPanel(id = 'alltabs', 
     
     tabPanel('(1) Maps',
 
@@ -234,7 +234,7 @@ shinyUI(fluidPage(
 
             div(style = pad,
                 pickerInput(inputId = "Site 2", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
@@ -255,21 +255,21 @@ shinyUI(fluidPage(
 
             div(style = pad,
                 pickerInput(inputId = "Site 5", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Protect'),
                             multiple = TRUE
                 )
             ),
 
             div(style = pad,
                 pickerInput(inputId = "Site 6", label = NULL, choices = c('Protect', 'Investigate', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
 
             div(style = pad,
                 pickerInput(inputId = "Site 7", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate'),
                             multiple = TRUE
                 )
             ),
@@ -290,21 +290,21 @@ shinyUI(fluidPage(
 
             div(style = pad,
                 pickerInput(inputId = "Site 10", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Protect'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
 
             div(style = pad,
                 pickerInput(inputId = "Site 11", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
 
             div(style = pad,
                 pickerInput(inputId = "Site 12", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
@@ -318,21 +318,21 @@ shinyUI(fluidPage(
 
             div(style = pad,
                 pickerInput(inputId = "Site 14", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Investigate', 'Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
 
             div(style = pad,
                 pickerInput(inputId = "Site 15", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             ),
 
             div(style = pad,
                 pickerInput(inputId = "Site 16", label = NULL, choices = c('Investigate', 'Protect', 'Restore'),
-                            options = list(`actions-box` = TRUE, size = 20), selected = c('Restore'),
+                            options = list(`actions-box` = TRUE, size = 20), selected = NULL,
                             multiple = TRUE
                 )
             )
@@ -349,7 +349,7 @@ shinyUI(fluidPage(
     
     tabPanel('(5) Priority maps',
        
-      h5("These maps show the location of recommended priority actions defind for each site type in step 4. Each site can have more than one priority.  Move a slider to initialize maps..."),
+      h5("These maps show the location of recommended priority actions defind for each site type in step 4. Each site can have more than one priority."),
 
       # investigate map
       column(width = 4,

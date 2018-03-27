@@ -300,7 +300,7 @@ server <- function(input, output, session) {
       mutate(n = as.character(n)) %>%
       deframe %>%
       as.list
-
+    
     return(out)
 
   })
@@ -490,7 +490,7 @@ server <- function(input, output, session) {
                    label = ~paste0(COMID, ', Likely score:', as.character(round(lns, 2)))
       ) %>%
       addLegend("topright", pal = pal, values = ~lns,
-                title = "Reach prediction (lines)",
+                title = "Reach CSCI prediction",
                 opacity = 1, na.label = "not in StreamCat"
       )
     
@@ -515,7 +515,7 @@ server <- function(input, output, session) {
                          fillColor = ~pal(csci), color = 'black'
         ) %>%
         addLegend("topright", pal = pal, values = csci()$csci,
-                  title = "CSCI observed (points)",
+                  title = "Observed CSCI (points)",
                   opacity = 1
         )
       
@@ -527,7 +527,7 @@ server <- function(input, output, session) {
       clearShapes() %>%
       clearControls()%>%
       addLegend("topright", pal = pal_exp, values = ~strcls,
-                title = "Expected classification (lines)",
+                title = "Reach classification",
                 opacity = 1, na.label = "not in StreamCat"
       ) %>%
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls),
@@ -559,6 +559,8 @@ server <- function(input, output, session) {
   ##
   # reactive maps, all steps
   observe({
+    
+    input$alltabs
     
     # other inputs
     ptsz <- input$pt_sz
