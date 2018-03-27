@@ -19,16 +19,6 @@ dt <- read_html('https://github.com/SCCWRP/SGRRMP/commits/master') %>%
 # column padding global
 pad <- 'padding:0px;'
 
-# html text for type counts
-typi <- paste0('Type', sprintf('%02d', seq(1, 16)))
-typtxt <- NULL
-for(i in typi){
-  ctxt <- paste0('<b><span id="', i, '"></span></b> ', i)
-  typtxt <- c(typtxt, ctxt)
-}
-typtxt <- paste(typtxt, collapse = ', ') %>% 
-  paste('<h4>Site type counts:', ., '</h4>')
-
 # Define UI for application
 shinyUI(fluidPage(
   
@@ -47,7 +37,7 @@ shinyUI(fluidPage(
            h5('This application can be used to explore landscape constraints on biological integrity of streams in the San Gabriel River Watershed.  The application provides context for evaluating stream health by estimating an expectation of biological condition at a given stream reach relative to landscape drivers. The process begins by identifying stream classifications and expectations from user-defined parameters for CSCI thresholds and confidence in the biological expectation. Stream classifications of expected biological constraints are defined as likely unconstrained, possibly unconstrained, possibly constrained, and likely constrained.  Observed CSCI scores at a site are then characterized relative to the reach expectations as over-scoring, expected, or under-scoring.  Site performance relative to the expectation can be used to recommend priorities for management actions. Last updated:', dt)
     ),
     
-    column(width = 12, img(src = "logo.jpg", width = '300px'), align = 'center', style = "margin-top: 0px;"),
+    column(width = 12, img(src = "logo.jpg", width = '900px'), align = 'center', style = "margin-top: 0px;"),
     
     column(width = 12, 
       h4('Created by Marcus W. Beck,', a('marcusb@sccwrp.org', href = 'mailto:marcusb@sccwrp.org'), ", Raphael D. Mazor,", a('raphaelm@sccwrp.org', href = 'mailto:raphaelm@sccwrp.org'), ", Scott Johnson,", a('scott@aquaticbioassay.com', href = 'mailto:scott@aquaticbioassay.com'), ", Peter Ode,", a('Peter.Ode@wildlife.ca.gov', href = 'mailto:Peter.Ode@wildlife.ca.gov'))
@@ -58,7 +48,7 @@ shinyUI(fluidPage(
   # master widgets    
   column(width = 12, 
     
-    h5('These sliders determine how stream expectations and site performance is evaluated. The first slider controls the CSCI threshold and the second slider controls the certainty range of the expected CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a station (see step 2). The third slider applies a jitter for monitoring sites with more than one visit.  These are seen as jitter points on the map.  Tabular summaries (step 4 and 5) will include all repeat visit if jitter is greater than zero, otherwise the site average across repeat visits is used.'),      
+    h5('These controls determine how stream expectations and site performance is evaluated. The first slider controls the CSCI threshold and the second slider controls the certainty range of the expected CSCI scores at each stream reach. Overlap of the certainty range with the CSCI threshold determines the expectation of a reach and performance of the CSCI score at a station (see step 2). The third switch determines if results are averaged for each site across all visits, or if results for all visits are shown.  Turning the switch to the right will jitter repeat visits on the maps and all tabular summaries (step 4 and 5) will consider each visit as a unique event.'),
     
     # select CSCI threshold, master
     column(width = 4,    
@@ -69,7 +59,7 @@ shinyUI(fluidPage(
             force_edges = TRUE,
             selected = '10% (0.79)',
             choices = c('1% (0.63)', '10% (0.79)', '30% (0.89)'),
-            width = '600px'
+            width = '400px'
           )
     ),
     
@@ -81,23 +71,26 @@ shinyUI(fluidPage(
             grid = FALSE, 
             force_edges = TRUE,
             choices = c('More certain (0.45)', '0.40', '0.35', '0.30', '0.25', '0.20', '0.15', '0.10', 'Less certain (0.05)'), 
-            width = '600px'
+            width = '400px'
           )
     ), 
     
     # apply jitter 
     column(width = 4, 
-          customSliderInput('jitr', 
-                            label = h6("Jitter overlaps:"), 
-                            min = 0, 
-                            max = 500,
-                            value = 0, 
-                            step = 25, 
-                            width = '400px', 
-                            ticks = FALSE
-          )
+           # jitr switch   
+           materialSwitch('jitr', 
+                          label = h6(HTML('Show results for repeat visits at each site:<br/><br/></br>')), 
+                          status = 'primary',
+                          right = F, 
+                          width = '400px'
+           )
+           
+      )
+           
     ),
 
+  column(width = 12, 
+  
     h5('These sliders control the aesthetics in the maps. Use them to change the point and line sizes.'), 
     
     # select point radius
@@ -358,24 +351,10 @@ shinyUI(fluidPage(
        
       h5("These maps show the location of recommended priority actions defind for each site type in step 4. Each site can have more than one priority.  Move a slider to initialize maps..."),
 
-      # site priority counts
-      column(width = 12,
-            htmlWidgetOutput(
-              outputId = 'cnts',
-              HTML('<h3>Site priority counts: <b><span id="Protect"></span></b> protect, <b><span id="Investigate"></span></b> investigate, <b><span id="Restore"></span></b> restore</h3>')
-            )),
-
-      # site type counts
-      column(width = 12,
-            htmlWidgetOutput(
-              outputId = 'typs',
-              HTML(typtxt)
-            )),
-
       # investigate map
       column(width = 4,
 
-            h3('Investigate'),
+            htmlWidgetOutput(outputId = 'cnts_inv', HTML('<h3>Investigate: <b><span id="Investigate"></span></b></h3>')),
             leafletOutput('bs_inv', width = '100%', height = 550),
             h3()
 
@@ -384,7 +363,7 @@ shinyUI(fluidPage(
       # protect map
       column(width = 4,
 
-            h3('Protect'),
+            htmlWidgetOutput(outputId = 'cnts_pro', HTML('<h3>Protect: <b><span id="Protect"></span></b></h3>')),
             leafletOutput('bs_pro', width = '100%', height = 550),
             h3()
 
@@ -393,7 +372,7 @@ shinyUI(fluidPage(
       # restore map
       column(width = 4,
 
-            h3('Restore'),
+            htmlWidgetOutput(outputId = 'cnts_res', HTML('<h3>Restore: <b><span id="Restore"></span></b></h3>')),
             leafletOutput('bs_res', width = '100%', height = 550),
             h3()
 

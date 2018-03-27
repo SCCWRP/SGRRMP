@@ -179,12 +179,12 @@ server <- function(input, output, session) {
       mutate(csci_difr = csci - lns)
   
     # jitter scores with overlapping lat/lon
-    if(jitr != 0){
+    if(jitr){
     
       out <- out %>% 
         mutate(
-          lat = ifelse(duplicated(lat), jitter(lat, factor = jitr), lat),
-          long = ifelse(duplicated(long), jitter(long, factor = jitr), long)
+          lat = ifelse(duplicated(lat), jitter(lat, factor = 300), lat),
+          long = ifelse(duplicated(long), jitter(long, factor = 300), long)
         )
 
     # take average csci is jitter is zero
@@ -290,9 +290,8 @@ server <- function(input, output, session) {
     
   })
   
-  # priority only counts, across typs
-  output$cnts <- reactive({
-
+  # cnts of prioritites across types
+  cnts <- reactive({
     out <- allcnts() %>%
       select(Priority, n) %>%
       unnest %>%
@@ -305,23 +304,10 @@ server <- function(input, output, session) {
     return(out)
 
   })
-
-  # type only counts, across priorities
-  output$typs <- reactive({
-
-    out <- allcnts() %>%
-      select(Type, n) %>%
-      unnest %>%
-      group_by(Type) %>%
-      summarise(n = sum(n)) %>%
-      mutate(n = as.character(n)) %>%
-      deframe %>%
-      as.list
-
-    return(out)
-
-  })
-
+  output$cnts_inv <- reactive({cnts()['Investigate']})
+  output$cnts_pro <- reactive({cnts()['Protect']})
+  output$cnts_res <- reactive({cnts()['Restore']})
+  
   # plot of csci scores and expectations by station code
   output$plo_exp <- renderPlot({
 
@@ -445,7 +431,7 @@ server <- function(input, output, session) {
       scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)),
                           guide = guide_legend(direction = 'vertical', title.position = 'left')) +
       scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nperformance`)),
-                        guide = guide_legend(ncol = 3, direction = 'vertical', title.position = 'left')) +
+                        guide = guide_legend(ncol = 4, direction = 'vertical', title.position = 'left')) +
       scale_x_discrete(limits = rev(levels(plot_ex()$typelv))) +
       mythm +
       coord_flip()
@@ -494,7 +480,7 @@ server <- function(input, output, session) {
     dat <- dat()
     dat_exp <- dat_exp()
     scr_exp_map <- scr_exp_map()
-    
+
     # score expectations
     exp_med <- leafletProxy("map_med", data = dat) %>%
       clearMarkers() %>%
@@ -505,7 +491,7 @@ server <- function(input, output, session) {
       ) %>%
       addLegend("topright", pal = pal, values = ~lns,
                 title = "Reach prediction (lines)",
-                opacity = 1
+                opacity = 1, na.label = "not in StreamCat"
       )
     
     # csci scores if false, otherwise differences
@@ -542,7 +528,7 @@ server <- function(input, output, session) {
       clearControls()%>%
       addLegend("topright", pal = pal_exp, values = ~strcls,
                 title = "Expected classification (lines)",
-                opacity = 1
+                opacity = 1, na.label = "not in StreamCat"
       ) %>%
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls),
                    label = ~paste0(COMID, ', Stream class:', strcls)
@@ -553,7 +539,7 @@ server <- function(input, output, session) {
       ) %>%
       addLegend("topright", pal = pal_prf, values = scr_exp_map$perf_mlt,
                 title = "CSCI performance (points)",
-                opacity = 1
+                opacity = 1, na.label = "not in StreamCat"
       )
     
     # sync the maps
@@ -596,7 +582,7 @@ server <- function(input, output, session) {
       clearControls() %>% 
       addLegend("topright", pal = pal_exp, values = ~strcls,
                 title = "Expected classification (lines)",
-                opacity = 1
+                opacity = 1, na.label = "not in StreamCat"
       ) %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste0(COMID, ', Stream class:', strcls)
