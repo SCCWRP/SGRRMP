@@ -382,7 +382,7 @@ server <- function(input, output, session) {
       p <- ggplot(toplo1, aes(y = StationCode, x = val)) +
         geom_line(data = toplo2, aes(x = val, colour = `Stream Class`), alpha = 0.1, size = 2) +
         geom_line(aes(colour = `Stream Class`), alpha = 0.6, size = 2) +
-        geom_point(data = toplo3, colour = 'white', size = 1, alpha = 1) +
+        geom_point(data = toplo3, colour = 'white', size = 1, alpha = 1, shape = 15) +
         theme_bw(base_family = 'serif', base_size = 18) +
         theme(
           axis.text.y = element_text(size = 10)
@@ -391,7 +391,6 @@ server <- function(input, output, session) {
         scale_y_discrete('Site') +
         scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
         geom_point(aes(x = csci, fill = `Relative\nscore`), size = 4, alpha = 0.8) +
-        scale_shape_manual(values = c(1, 2, 3, 4)) +
         geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
         scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nscore`)), na.value = 'yellow')
 
