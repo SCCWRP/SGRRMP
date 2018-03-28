@@ -1,6 +1,6 @@
 # README
 
-Marcus W. Beck, [marcusb@sccwrp.or](mailto:marcusb@sccwrp.org)
+Marcus W. Beck, [marcusb@sccwrp.org](mailto:marcusb@sccwrp.org)
 
 View the [app](https://beckmw.shinyapps.io/sgrrmp_classify/)
 
