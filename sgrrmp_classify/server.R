@@ -578,10 +578,6 @@ server <- function(input, output, session) {
       clearMarkers() %>%
       clearShapes() %>%
       clearControls() %>% 
-      addLegend("topright", pal = pal_exp, values = ~strcls,
-                title = "Expected classification (lines)",
-                opacity = 1, na.label = "not in StreamCat"
-      ) %>% 
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls), 
                    label = ~paste0(COMID, ', Stream class:', strcls)
       )
