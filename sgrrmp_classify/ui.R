@@ -32,13 +32,18 @@ shinyUI(fluidPage(
         font-weight: 500; line-height: 1.1"),
   
   fluidRow(
-  
-    column(width = 12, img(src = "logo.jpg", width = '900px'), align = 'center', style = "margin-top: 0px;"),
-    
-    column(width = 12, 
-           h4('Created by Marcus W. Beck,', a('marcusb@sccwrp.org', href = 'mailto:marcusb@sccwrp.org'), ", Raphael D. Mazor,", a('raphaelm@sccwrp.org', href = 'mailto:raphaelm@sccwrp.org'), ", Scott Johnson,", a('scott@aquaticbioassay.com', href = 'mailto:scott@aquaticbioassay.com'), ", Peter Ode,", a('Peter.Ode@wildlife.ca.gov', href = 'mailto:Peter.Ode@wildlife.ca.gov'))
+
+    column(width = 8, align = 'center', style = "margin-top: 20px;",
+           HTML('<h4>Created by Marcus W. Beck, <a href="mailto:marcusb@sccwrp.org">marcusb@sccwrp.org</a>, Raphael D. Mazor, <a href="mailto:raphaelm@sccwrp.org">raphaelm@sccwrp.org</a>, Scott Johnson, <a href="mailto:scott@aquaticbioassay.com">scott@aquaticbioassay.com</a>, Peter Ode, <a href="mailto:Peter.Ode@wildlife.ca.gov">Peter.Ode@wildlife.ca.gov</a></h4>')
     ),
     
+    column(width = 4, img(src = "logo2.jpg", width = '350px'), align = 'center', style = "margin-top: 0px;")
+    
+    
+  ),
+    
+  fluidRow(
+
     column(width = 12, 
            h5(HTML('This application can be used to explore landscape constraints on biological integrity of streams in the San Gabriel River Watershed.  The application provides context for evaluating stream health by estimating an expectation of biological condition at a given stream reach relative to landscape drivers. Biological condition from field data using the California Stream Condition Index can be compared to the reach expectation.  The process begins by identifying stream classifications and expectations from user-defined parameters for CSCI thresholds and confidence in the biological expectation. Stream classifications of expected biological constraints are defined as likely unconstrained, possibly unconstrained, possibly constrained, and likely constrained.  Observed CSCI scores at a site are then characterized relative to the reach expectations as over-scoring, expected, or under-scoring.  Relative site scores given the expectation can be used to recommend priorities for management actions. View source <a href="https://github.com/SCCWRP/SGRRMP">here</a>. Last updated:'), dt)
     )
