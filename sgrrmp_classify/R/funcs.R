@@ -1,3 +1,16 @@
+# remove mouse coordinates from mapview, input must be a leaflet object
+removeMouseCoordinates = function(map) {
+
+  rc = map$jsHooks$render
+  rc_lnlt = lapply(rc, grep, pattern = "lnlt")
+  for (i in seq_along(map$jsHooks$render)) {
+    map$jsHooks$render[[i]][rc_lnlt[[i]]] = NULL
+  }
+  
+  return(map)
+}
+
+
 ######
 # get legend from an existing ggplot object
 g_legend <- function(a.gplot){
