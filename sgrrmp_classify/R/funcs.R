@@ -445,7 +445,7 @@ getcls <- function(datin, thrsh = 0.79, tails = 0.05,  modls = c('core', 'full')
 #' 
 #' @return a nested data frame sorted by increaesing median value of expected score of COMID and nested columns as original data, cut data by tails, and sream classification (strcls).  The strcls column indicates if the ranges in datcut are within, above, or below those defind by thrsh.
 getcls2 <- function(datin, thrsh = 0.79, tails = 0.05, modls = c('core', 'full'), lbs = list('likely unconstrained' = 0, 'possibly unconstrained' = 1, 'possibly constrained' = 2, 'likely constrained' = 3)){
-  
+
   # sanity check
   if(tails >= 0.5)
     stop('tails must be less than 0.5')
