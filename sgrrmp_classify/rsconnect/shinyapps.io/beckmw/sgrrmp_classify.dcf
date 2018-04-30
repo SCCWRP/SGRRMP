@@ -4,6 +4,6 @@ account: beckmw
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 260040
-bundleId: 1326132
+bundleId: 1347688
 url: https://beckmw.shinyapps.io/sgrrmp_classify/
-when: 1524080834.83379
+when: 1525110682.17857

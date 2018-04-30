@@ -15,60 +15,28 @@ prj <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 lnsz <- 1.25
 ptsz <- 4.5
 
-# color palette for stream expectations
-pal_exp <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Paired')[c(2, 1, 5, 6)],
-  na.color = 'yellow',
-  levels = c('likely unconstrained', 'possibly unconstrained', 'possibly constrained', 'likely constrained'))
+# spatial comid data
+load('data/spat.RData')
 
-# icons for map, created externally
-crsz <- 11
-trsz <- 15
-mapicons <- iconList(
-  `over scoring (lu)` = makeIcon("www/overlu.png", trsz, trsz),
-  `expected (lu)` = makeIcon("www/explu.png", crsz, crsz),
-  `under scoring (lu)`= makeIcon("www/underlu.png", trsz, trsz),
-  `over scoring (pu)` = makeIcon("www/overpu.png", trsz, trsz),
-  `expected (pu)` = makeIcon("www/exppu.png", crsz, crsz),
-  `under scoring (pu)`= makeIcon("www/underpu.png", trsz, trsz),
-  `over scoring (pc)` = makeIcon("www/overpc.png", trsz, trsz),
-  `expected (pc)` = makeIcon("www/exppc.png", crsz, crsz),
-  `under scoring (pc)`= makeIcon("www/underpc.png", trsz, trsz),
-  `over scoring (lc)` = makeIcon("www/overlc.png", trsz, trsz),
-  `expected (lc)` = makeIcon("www/explc.png", crsz, crsz),
-  `under scoring (lc)`= makeIcon("www/underlc.png", trsz, trsz)
-)
+# csci scores at sites
+load('data/scrs.RData')
+
+# base mapview
+scrs_mv <- scrs %>% 
+  st_as_sf(coords = c('long', 'lat')) %>% 
+  st_set_crs(prj) %>% 
+  mapview(layer.name = 'reset') %>% 
+  .@map
+
+# base mapview sync, first tab
+scrs_mv1 <- scrs_mv %>% 
+  syncWith('maps1')
+
+# base mapview sync, final tab
+scrs_mv2 <- scrs_mv %>% 
+  syncWith('maps2')
 
 sts <- paste('Site', seq(1:16))
-
-# color palette for CSCI scoring performance
-pal_prf <- colorFactor(
-  palette = c(
-    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(90, 74, 58)],
-    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(42, 26, 10)],
-    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(42, 26, 10)],
-    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(90, 74, 58)]
-    ),
-  na.color = 'yellow',
-  levels = c(
-    'over scoring (lu)', 'expected (lu)', 'under scoring (lu)',
-    'over scoring (pu)', 'expected (pu)', 'under scoring (pu)',
-    'over scoring (pc)', 'expected (pc)', 'under scoring (pc)',
-    'over scoring (lc)', 'expected (lc)', 'under scoring (lc)')
-  )
-
-# color palette for stream expectations
-pal_pri <- colorFactor(
-  palette = RColorBrewer::brewer.pal(9, 'Greys')[c(8, 5, 2)],
-  na.color = 'yellow',
-  levels = c('Protect', 'Investigate', 'Restore'))
-
-# color palette for CSCI type
-pal_typ <- colorFactor(
-  palette = RColorBrewer::brewer.pal(11, 'Spectral'),#hue_pal()(100), 
-  na.color = 'yellow',
-  domain = paste0('Type', sprintf('%02d', seq(1:16)))
-)
 
 # example data, csci scores
 scrs_ex <- data.frame(
@@ -84,111 +52,83 @@ exps_ex <- data.frame(
   stringsAsFactors = F
 ) 
 
-# have to reassign sgr data for reactives
-data(scrs)
-scrs_tmp <- scrs
-data(spat)
-spat_tmp <- spat
+# color domain, csci scores and expectations
+dmn <- spat %>% 
+  select(matches('full')) %>% 
+  data.frame %>% 
+  select(-geometry) %>% 
+  gather('var', 'val') %>% 
+  .$val %>% 
+  c(., scrs$csci) %>% 
+  range(na.rm = T)
+
+dmn_difr <- spat %>% 
+  select(matches('full')) %>% 
+  data.frame %>% 
+  select(-geometry) %>% 
+  gather('var', 'val') %>% 
+  .$val %>% 
+  range(na.rm = T)
+dmn_difr <- c(min(scrs$csci) - dmn_difr[2], max(scrs$csci) - dmn_difr[1])
+ 
+# color palette for csci scores
+pal <- colorNumeric(
+  palette = c('#d7191c', '#abd9e9', '#2c7bb6'),
+  na.color = 'yellow',
+  domain = dmn)
+
+# color palette for csci score differences
+pal_difr <- colorNumeric(
+  palette = c('black', 'purple', 'white', 'darkgreen', 'black'),
+  na.color = 'yellow',
+  domain = dmn_difr)
+
+# color palette for stream expectations
+pal_exp <- colorFactor(
+  palette = brewer.pal(9, 'Paired')[c(2, 1, 5, 6)],
+  na.color = 'yellow',
+  levels = c('likely unconstrained', 'possibly unconstrained', 'possibly constrained', 'likely constrained'))
+
+# color palette for CSCI scoring performance
+pal_prf <- colorFactor(
+  palette = c(
+    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(90, 74, 58)],
+    colorRampPalette(brewer.pal(9, 'Blues'))(100)[c(42, 26, 10)],
+    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(42, 26, 10)],
+    colorRampPalette(brewer.pal(9, 'Reds'))(100)[c(90, 74, 58)]
+  ),
+  na.color = 'yellow',
+  levels = c(
+    'over scoring (lu)', 'expected (lu)', 'under scoring (lu)',
+    'over scoring (pu)', 'expected (pu)', 'under scoring (pu)',
+    'over scoring (pc)', 'expected (pc)', 'under scoring (pc)',
+    'over scoring (lc)', 'expected (lc)', 'under scoring (lc)')
+)
+
+# color palette for stream expectations
+pal_pri <- colorFactor(
+  palette = RColorBrewer::brewer.pal(9, 'Greys')[c(8, 5, 2)],
+  na.color = 'yellow',
+  levels = c('Protect', 'Investigate', 'Restore'))
+
+# color palette for CSCI type
+pal_typ <- colorFactor(
+  palette = RColorBrewer::brewer.pal(11, 'Spectral'),#hue_pal()(100), 
+  na.color = 'yellow',
+  domain = paste0('Type', sprintf('%02d', seq(1:16)))
+)
 
 # server logic
 server <- function(input, output, session) {
   
-  # spatial polylines from watershed selection
-  spat <- reactive({
-
-    # # shd <- input$shd
-    # spat <- paste0('spat_', shd)
-    # load(file = paste0('data/', spat, '.RData'))
-    # get(spat)
-    na.omit(spat_tmp)
-    
-  })
-  
-  # csci scores from watershed selection
-  scrs <- reactive({
-    
-    # # shd <- input$shd
-    # scrs <- paste0('scrs_', shd)
-    # load(file = paste0('data/', scrs, '.RData'))
-    # get(scrs)
-    na.omit(scrs_tmp)
-    
-  })
-  
-  # base mapview
-  scrs_mv <- reactive({
-    
-    scrs() %>% 
-      st_as_sf(coords = c('long', 'lat')) %>% 
-      st_set_crs(prj) %>% 
-      mapview(layer.name = 'reset') %>% 
-      .@map
-    
-  })
-  
-  # base mapview sync, first tab
-  scrs_mv1 <- reactive({
-    scrs_mv() %>% 
-      syncWith('maps1')
-  })
-  
-  # base mapview sync, final tab
-  scrs_mv2 <- reactive({
-    scrs_mv() %>% 
-      syncWith('maps2')
-  })
-  
-  # color palette for csci scores
-  pal <- reactive({
-  
-    # color domain, csci scores and expectations
-    dmn <- spat() %>% 
-      select(matches('full')) %>% 
-      data.frame %>% 
-      select(-geometry) %>% 
-      gather('var', 'val') %>% 
-      .$val %>% 
-      c(., scrs()$csci) %>% 
-      range(na.rm = T)  
-    
-    colorNumeric(
-      palette = c('#d7191c', '#abd9e9', '#2c7bb6'),
-      na.color = 'yellow',
-      domain = dmn
-      )
-    
-  })
-  
-  # color palette for csci score differences
-  pal_difr <- reactive({
-  
-    dmn_difr <- spat() %>% 
-      select(matches('full')) %>% 
-      data.frame %>% 
-      select(-geometry) %>% 
-      gather('var', 'val') %>% 
-      .$val %>% 
-      range(na.rm = T)
-    dmn_difr <- c(min(scrs()$csci) - dmn_difr[2], max(scrs()$csci) - dmn_difr[1]) %>% 
-      abs %>% 
-      max
-    dmn_difr <- c(-1 * dmn_difr, dmn_difr)
-    
-    colorNumeric(
-      palette = c('black', 'purple', 'white', 'darkgreen', 'black'),
-      na.color = 'yellow',
-      domain = dmn_difr)
-    
-  })
-  
   # data to plot, polylines with score expections
   dat <- reactive({
-    
-    out <- spat()
+
     # change percentile column name
-    names(out)[names(out) %in% 'full0.50'] <- 'lns'
+    names(spat)[names(spat) %in% 'full0.50'] <- 'lns'
     
     # output
+    out <- spat 
     out
     
   })
@@ -208,12 +148,12 @@ server <- function(input, output, session) {
   dat_exp <- reactive({
     
     # get biological condition expectations
-    cls <- getcls2(spat(), thrsh = thrsh(), tails = tlinp(), modls = 'full')
-    
+    cls <- getcls2(spat, thrsh = thrsh(), tails = tlinp(), modls = 'full')
+
     # join with spatial data
-    out <- spat() %>% 
+    out <- spat %>% 
       left_join(cls, by = 'COMID')
-    
+
     out
     
   })
@@ -222,8 +162,7 @@ server <- function(input, output, session) {
   plot_ex <- reactive({
     
     # output
-    out <- proc_all(exps_ex, scrs_ex, thrsh = 0.79, tails = 0.05) %>% 
-      mutate(perf = factor(perf, levels = rev(levels(perf))))
+    out <- proc_all(exps_ex, scrs_ex, thrsh = 0.79, tails = 0.05)
     
     out
     
@@ -231,26 +170,26 @@ server <- function(input, output, session) {
   
   # CSCI scores, take difference from expectation if difr is true
   csci <- reactive({
-    
+
     jitr <- input$jitr
-    
+
     # get csci difference
     out <- dat() %>% 
       select(COMID, lns) %>% 
       mutate(COMID = as.character(COMID)) %>% 
-      left_join(scrs(), ., by = 'COMID') %>% 
+      left_join(scrs, ., by = 'COMID') %>% 
       mutate(csci_difr = csci - lns)
-    
+  
     # jitter scores with overlapping lat/lon
     if(jitr){
-      
+    
       out <- out %>% 
         mutate(
           lat = ifelse(duplicated(lat), jitter(lat, factor = 300), lat),
           long = ifelse(duplicated(long), jitter(long, factor = 300), long)
         )
-      
-      # take average csci is jitter is zero
+
+    # take average csci is jitter is zero
     } else {
       
       out <- out %>% 
@@ -258,20 +197,20 @@ server <- function(input, output, session) {
         summarise(
           csci = mean(csci, na.rm = TRUE), 
           csci_difr = mean(csci_difr, na.rm = TRUE)
-        ) %>% 
+          ) %>% 
         ungroup
-      
+        
     }
     
     return(out)
-    
+      
   })
   
   # CSCI scores and stream condition expectations, maps only 
   scr_exp_map <- reactive({
-    
+
     # process
-    incl <- site_exp(spat(), csci(), thrsh = thrsh(), tails = tlinp(), modls = 'full') %>% 
+    incl <- site_exp(spat, csci(), thrsh = thrsh(), tails = tlinp(), modls = 'full') %>% 
       select(-lat, -long) %>% 
       group_by(StationCode) %>% 
       nest
@@ -291,13 +230,13 @@ server <- function(input, output, session) {
     return(out)
     
   })
-  
+
   # CSCI scores and stream condition expectations, not on maps
   # these data are never averaged by station averaged for CSCI
   scr_exp <- reactive({
     
     # process
-    incl <- site_exp(spat(), scrs(), thrsh = thrsh(), tails = tlinp(), modls = 'full')
+    incl <- site_exp(spat, scrs, thrsh = thrsh(), tails = tlinp(), modls = 'full')
     
     # add additional perf column for multicolor by strcls (pal_prf)
     out <- get_perf_mlt(incl)
@@ -365,7 +304,7 @@ server <- function(input, output, session) {
       as.list
     
     return(out)
-    
+
   })
   output$cnts_inv <- reactive({cnts()['Investigate']})
   output$cnts_pro <- reactive({cnts()['Protect']})
@@ -373,23 +312,20 @@ server <- function(input, output, session) {
   
   # plot of csci scores and expectations by station code
   output$plo_exp <- renderPlot({
-    
+
     bysta <- input$bysta
     nocon <- input$nocon
-    
+
     # CSCI scores and expectations
     toplo1 <- scr_exp_map() %>%
       select(COMID, StationCode, datcut, strcls, csci, perf, typelv, perf_mlt) %>%
       unnest %>%
-      mutate(
-        strcls = factor(strcls, levels = rev(levels(strcls))),
-        perf = factor(perf, levels = rev(levels(perf)))
-        ) %>%
+      mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>%
       rename(
         `Stream Class` = strcls,
         `Relative\nscore` = perf_mlt,
         Type = typelv
-      )
+        )
 
     # total expected range
     toplo2 <- scr_exp_map() %>%
@@ -397,16 +333,16 @@ server <- function(input, output, session) {
       unnest %>%
       mutate(strcls = factor(strcls, levels = rev(levels(strcls)))) %>%
       rename(`Stream Class` = strcls)
-    
+
     # median expectation
     toplo3 <- scr_exp_map() %>%
       select(COMID, StationCode, datcut) %>%
       unnest %>%
       filter(grepl('0\\.50$', var))
-    
+
     # arrange by station if true
     if(bysta){
-      
+
       toplo1 <- toplo1 %>%
         mutate(StationCode = as.character(StationCode)) %>%
         arrange(StationCode)%>%
@@ -414,7 +350,7 @@ server <- function(input, output, session) {
           StationCode = factor(StationCode),
           StationCode = factor(StationCode, levels = rev(levels(StationCode)))
         )
-      
+
       toplo2 <- toplo2 %>%
         mutate(StationCode = as.character(StationCode)) %>%
         arrange(StationCode) %>%
@@ -422,12 +358,12 @@ server <- function(input, output, session) {
           StationCode = factor(StationCode),
           StationCode = factor(StationCode, levels = rev(levels(StationCode)))
         )
-      
+
     }
-    
+
     # bare bones plot if true
     if(nocon){
-      
+
       # plot
       p <- ggplot(toplo1, aes(y = StationCode, x = val)) +
         theme_bw(base_family = 'serif', base_size = 18) +
@@ -438,8 +374,8 @@ server <- function(input, output, session) {
         scale_y_discrete('Site') +
         geom_point(aes(x = csci), fill = 'white', shape = 21, size = 4, alpha = 0.8) +
         geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1)
-      
-      # otherwise full
+
+    # otherwise full
     } else {
 
       # plot
@@ -454,30 +390,29 @@ server <- function(input, output, session) {
         scale_x_continuous('CSCI') +
         scale_y_discrete('Site') +
         scale_colour_manual(values = pal_exp(levels(toplo1$`Stream Class`))) +
-        geom_point(aes(x = csci, fill = `Stream Class`, shape = perf), size = 4, alpha = 0.8) +
+        geom_point(aes(x = csci, fill = `Relative\nscore`), shape = 21, size = 4, alpha = 0.8) +
         geom_vline(xintercept = thrsh(), linetype = 'dashed', size = 1) +
-        scale_fill_manual(values = pal_exp(levels(toplo1$`Stream Class`)), na.value = 'yellow', guide = F) + 
-        scale_shape_manual('Relative site score', values = c(24, 21, 25))
-      
+        scale_fill_manual(values = pal_prf(levels(toplo1$`Relative\nscore`)), na.value = 'yellow')
+
     }
-    
+
     print(p)
-    
+
   })
-  
+
   # summary tables
   output$tab_sum <- DT::renderDataTable({
-    
+
     # summary table by csci type
     totab <- get_tab(scr_exp_map(), thrsh = thrsh(), tails = tlinp())
-    
+
     return(totab)
-    
+
   }, rownames = F, options = list(dom = 't', pageLength = 16))
-  
+
   # the selection priority plot
   siteplo <- reactive({
-    
+
     mythm <- theme_minimal(base_family = 'serif', base_size = 18) +
       theme(
         axis.title.y = element_blank(),
@@ -489,39 +424,37 @@ server <- function(input, output, session) {
         axis.text.x = element_blank(),
         legend.position = 'top'
       )
-    
+
     p <- ggplot(plot_ex(), aes(x = typelv)) +
       geom_errorbar(aes(ymin = minv, ymax = maxv, colour = `Stream class`), width = 0, size = 2, alpha = 0.2) +
       geom_errorbar(aes(ymin = minv_qt, ymax = maxv_qt, colour = `Stream class`), width = 0, size = 2, alpha = 0.7) +
-      geom_point(aes(y  = `CSCI score`, fill = `Stream class`, shape = perf), size = 7, alpha = 0.8) +
+      geom_point(aes(y  = `CSCI score`, fill = `Relative\nscore`), shape = 21, size = 7, alpha = 0.8) +
       geom_hline(yintercept = 0.79, linetype = 'dashed') +
       scale_colour_manual(values = pal_exp(levels(plot_ex()$`Stream class`)),
                           guide = guide_legend(direction = 'vertical', title.position = 'left')) +
-      scale_fill_manual(values = pal_exp(levels(plot_ex()$`Stream class`)),
-                        guide = F) +
-      scale_shape_manual('Relative site score', values = c(24, 21, 25), 
-                         guide = guide_legend(direction = 'veritical', title.position = 'left')) +
+      scale_fill_manual(values = pal_prf(levels(plot_ex()$`Relative\nscore`)),
+                        guide = guide_legend(ncol = 4, direction = 'vertical', title.position = 'left')) +
       scale_x_discrete(limits = rev(levels(plot_ex()$typelv))) +
       mythm +
       coord_flip()
-    
+
     # get legend
     pleg <- g_legend(p)
     p <- p +
       mythm %+replace%
       theme(legend.position = 'none')
-    
+
     # output as list
     plo_ls <- list(pleg, p)
     return(plo_ls)
-    
+
   })
-  
+
   # expectation plot legend
   output$plo_leg <- renderPlot({
     grid.arrange(siteplo()[[1]])
   })
-  
+
   # expectation plot
   output$plo_exp2 <- renderPlot({
     siteplo()[[2]]
@@ -531,16 +464,14 @@ server <- function(input, output, session) {
   # maps
   
   # non-reactive base map for csci observed
-  output$map_med <- renderLeaflet(scrs_mv1())
-  
+  output$map_med <- renderLeaflet(scrs_mv1)
+
   # non-reactive base map, condition expectations
-  output$map_exp <- renderLeaflet(scrs_mv1())
-  
+  output$map_exp <- renderLeaflet(scrs_mv1)
+
   ##
   # reactive maps, all steps
   observe({
-    
-    input$alltabs
     
     # other inputs
     difr <- input$difr
@@ -549,16 +480,16 @@ server <- function(input, output, session) {
     dat <- dat()
     dat_exp <- dat_exp()
     scr_exp_map <- scr_exp_map()
-    
+
     # score expectations
     exp_med <- leafletProxy("map_med", data = dat) %>%
       clearMarkers() %>%
       clearShapes() %>%
       clearControls() %>%
-      addPolylines(opacity = 1, weight = lnsz, color = ~pal()(lns),
+      addPolylines(opacity = 1, weight = lnsz, color = ~pal(lns),
                    label = ~paste0(COMID, ', Likely score:', as.character(round(lns, 2)))
       ) %>%
-      addLegend("topright", pal = pal(), values = ~lns,
+      addLegend("topright", pal = pal, values = ~lns,
                 title = "Reach CSCI prediction",
                 opacity = 1, na.label = "not in StreamCat"
       )
@@ -567,11 +498,11 @@ server <- function(input, output, session) {
     if(difr){
       
       exp_med <- exp_med %>%
-        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 1,
+        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8,
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci_difr, 2))),
-                         fillColor = ~pal_difr()(csci_difr), color = 'black'
+                         fillColor = ~pal_difr(csci_difr), color = 'black'
         ) %>%
-        addLegend("topright", pal = pal_difr(), values = csci()$csci_difr,
+        addLegend("topright", pal = pal_difr, values = csci()$csci_difr,
                   title = "CSCI difference",
                   opacity = 1
         )
@@ -579,11 +510,11 @@ server <- function(input, output, session) {
     } else {
       
       exp_med <- exp_med %>%
-        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 1, fillOpacity = 1,
+        addCircleMarkers(data = csci(), lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.8,
                          label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2))),
-                         fillColor = ~pal()(csci), color = 'black'
+                         fillColor = ~pal(csci), color = 'black'
         ) %>%
-        addLegend("topright", pal = pal(), values = csci()$csci,
+        addLegend("topright", pal = pal, values = csci()$csci,
                   title = "Observed CSCI (points)",
                   opacity = 1
         )
@@ -602,22 +533,28 @@ server <- function(input, output, session) {
       addPolylines(opacity = 1, weight = lnsz, color = ~pal_exp(strcls),
                    label = ~paste0(COMID, ', Stream class:', strcls)
       ) %>%
-      addMarkers(data = scr_exp_map, lng = ~long, lat = ~lat,
-                 label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt),
-                 icon = ~mapicons[perf_mlt]
-                 
+      addCircleMarkers(data = scr_exp_map, lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                       label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt),
+                       fillColor = ~pal_prf(perf_mlt), color = 'black'
+      ) %>%
+      addLegend("topright", pal = pal_prf, values = scr_exp_map$perf_mlt,
+                title = "Relative CSCI (points)",
+                opacity = 1, na.label = "not in StreamCat"
       )
+    
+    # sync the maps
+    combineWidgets(exp_med, exp_cls)
     
   })
   
   # non-reactive base map, protect priority
-  output$bs_pro <- renderLeaflet(scrs_mv2())
+  output$bs_pro <- renderLeaflet(scrs_mv2)
   
   # non-reactive base map, investigate priority
-  output$bs_inv <- renderLeaflet(scrs_mv2())
+  output$bs_inv <- renderLeaflet(scrs_mv2)
   
   # non-reactive base map, restore priority
-  output$bs_res <- renderLeaflet(scrs_mv2())
+  output$bs_res <- renderLeaflet(scrs_mv2)
   
   ##
   # reactive maps, all steps
@@ -667,10 +604,13 @@ server <- function(input, output, session) {
     if(length(dat_pro) > 0){
       
       pri_pro <- pri_pro %>% 
-        addMarkers(data = dat_pro[[1]], lng = ~long, lat = ~lat,
-                   label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt, ', ', typelv),
-                   icon = ~mapicons[perf_mlt]
-                   
+        addCircleMarkers(data = dat_pro[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_pro[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
         )
       
     }
@@ -679,26 +619,34 @@ server <- function(input, output, session) {
     if(length(dat_inv) > 0){
       
       pri_inv <- pri_inv %>% 
-        addMarkers(data = dat_inv[[1]], lng = ~long, lat = ~lat,
-                   label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt, ', ', typelv),
-                   icon = ~mapicons[perf_mlt]
-                   
+        addCircleMarkers(data = dat_inv[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_inv[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
         )
-        
+      
     }
     
     # add restore points if not empty
     if(length(dat_res) > 0){
       
       pri_res <- pri_res %>% 
-        addMarkers(data = dat_res[[1]], lng = ~long, lat = ~lat,
-                   label = ~paste0(StationCode, ', CSCI: ', as.character(round(csci, 2)), ', ', perf_mlt, ', ', typelv),
-                   icon = ~mapicons[perf_mlt]
-                   
-        ) 
-      
+        addCircleMarkers(data = dat_res[[1]], lng = ~long, lat = ~lat, radius = ptsz, weight = 0.9, fillOpacity = 0.9,
+                         label = ~paste0(StationCode, ', CSCI: ', round(csci, 2), ', ', perf_mlt, ', ', typelv),
+                         fillColor = ~pal_typ(typelv), color = 'black'
+        ) %>% 
+        addLegend("topright", pal = pal_typ, values = dat_res[[1]]$typelv,
+                  title = "Site type (points)",
+                  opacity = 1
+        )
     }
     
+    # sync the maps
+    combineWidgets(pri_pro, pri_inv, pri_res)
+    
   })
-  
+
 }
