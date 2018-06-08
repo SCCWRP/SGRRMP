@@ -5,6 +5,6 @@ account: beckmw
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 334275
-bundleId: 1347675
+bundleId: 1419623
 url: https://beckmw.shinyapps.io/scape_brief/
-when: 1525110339.58578
+when: 1528488549.07236

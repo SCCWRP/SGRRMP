@@ -21,6 +21,7 @@ pad <- 'padding:0px;'
 shinyUI(fluidPage(
   
   theme = 'styles.css',
+  tags$head(includeScript('google-analytics.js')),
   useShinyjs(),
   useShinyCustom(slider_delay = '1500'),
 

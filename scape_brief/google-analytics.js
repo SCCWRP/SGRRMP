@@ -5,7 +5,7 @@
   a.src=g;m.parentNode.insertBefore(a,m)
   })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-  ga('create', 'UA-120564818-2', 'auto');
+  ga('create', 'UA-120564818-3', 'auto');
   ga('send', 'pageview');
   
 $(document).on('change', 'select', function(e) {
