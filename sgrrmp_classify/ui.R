@@ -32,15 +32,21 @@ shinyUI(fluidPage(
   
   fluidRow(
     
-    column(width = 3, img(src = "logo2.jpg", width = '450px'), align = 'center', style = "margin-top: 0px;")
-    
-    # column(width = 4, 
-    #        selectInput('shd',
-    #                    label = h6("Select watershed:"), 
-    #                    choices = shds, 
-    #                    selected = shds[2]
-    #        )
-    # )
+    column(width = 12,
+           
+           a(href = 'http://sccwrp.org/Homepage.aspx', target = '_blank',
+             img(src = "sccwrp_logo.jpg", height = '120px', align = 'left', style = "margin-right: 20px; ")
+           ),
+           
+           a(href = 'http://sgrrmp.org/', target = '_blank',
+             img(src = "SGRRMP Logo.png", height = '120px', align = 'left', style = "margin-right: 25px;")
+           ),
+           
+           a(href = 'https://www.waterboards.ca.gov/water_issues/programs/swamp/', target = '_blank', 
+             img(src = "SWAMP_Logo_RGB.JPG", height= '120px', align = 'left', style = "margin-right: 20px;")
+           )
+           
+    )
     
   ),
   
